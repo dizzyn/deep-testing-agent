@@ -7,9 +7,11 @@ import { useEffect, useState } from "react";
 import { fetchSessionData, type SessionData } from "@/lib/session";
 
 export default function HomePage() {
-  const [artifactExists, setArtifactExists] = useState<boolean>(false);
-  const [artifactContent, setArtifactContent] = useState<string>("");
   const [sessionData, setSessionData] = useState<SessionData | null>(null);
+
+  // Derived state from sessionData
+  const artifactExists = Boolean(sessionData?.sessionMeta?.testBrief);
+  const artifactContent = sessionData?.sessionMeta?.testBrief || "";
 
   const loadSessionData = async (): Promise<void> => {
     try {
@@ -22,8 +24,6 @@ export default function HomePage() {
 
   const handleSessionReset = (): void => {
     setSessionData(null);
-    setArtifactExists(false);
-    setArtifactContent("");
     // Clear chat history flag so it can be reloaded
     if (typeof window !== "undefined") {
       window.location.reload();
@@ -47,42 +47,6 @@ export default function HomePage() {
 
     return () => clearInterval(interval);
   }, []);
-
-  // Check artifact when sessionData changes
-  useEffect(() => {
-    let isCancelled = false;
-
-    const checkArtifact = async (): Promise<void> => {
-      const shouldCheckArtifact = sessionData?.files.includes("test_brief.md");
-
-      if (shouldCheckArtifact) {
-        try {
-          const response = await fetch("/session/test_brief.md");
-          if (!isCancelled) {
-            if (response.ok) {
-              const content = await response.text();
-              setArtifactExists(true);
-              setArtifactContent(content);
-            } else {
-              setArtifactExists(false);
-            }
-          }
-        } catch {
-          if (!isCancelled) {
-            setArtifactExists(false);
-          }
-        }
-      } else if (sessionData && !isCancelled) {
-        setArtifactExists(false);
-      }
-    };
-
-    checkArtifact();
-
-    return () => {
-      isCancelled = true;
-    };
-  }, [sessionData]);
 
   return (
     <div className="min-h-screen bg-black text-white flex flex-col">

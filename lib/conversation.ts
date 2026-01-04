@@ -56,8 +56,20 @@ export async function saveMessage(message: Message): Promise<void> {
     // Save back to file
     await writeFile(filePath, JSON.stringify(updatedMessages, null, 2), "utf8");
 
-    // Update session meta
+    // Update session meta while preserving existing data
+    let existingMeta = {};
+    try {
+      const metaContent = await readFile(
+        join(SESSION_DIR, "session_meta.json"),
+        "utf8"
+      );
+      existingMeta = JSON.parse(metaContent);
+    } catch {
+      // File doesn't exist or is invalid, start fresh
+    }
+
     const sessionMeta = {
+      ...existingMeta,
       lastUpdated: new Date().toISOString(),
       messageCount: updatedMessages.length,
       status: "active",

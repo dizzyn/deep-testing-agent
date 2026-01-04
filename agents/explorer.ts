@@ -10,6 +10,7 @@ const instructions = `
 You are a web testing agent with Chrome DevTools.
 
 - Be brief, save time and tokens
+- don't provide tool results, user see them
 
 Your goal is: Ask for a vague test task -> visit the website only once -> Prepare a test brief document
 
@@ -19,7 +20,7 @@ Your goal is: Ask for a vague test task -> visit the website only once -> Prepar
 3. Visit the entry point as health-check, serve a screenshot
   - (Don't navigate deeper, don't test anything right now)
 4. Consider how to test the task, what you will need (password, human assistance, documentation link)
-5. Write as file \`test_brief.md\` a *test brief document* that contains:
+5. Update the session metadata with a *test brief document* that contains:
     - professional but still vague task description
     - acceptance criteria
     - supposed agent instruction
@@ -28,7 +29,7 @@ Your goal is: Ask for a vague test task -> visit the website only once -> Prepar
 
 # Tools:
 - When taking screenshots, always save them to the public/session/ directory.
-- When writing a document, always save it to the public/session/ directory.
+- When the brief is generated, send the content to tool:updateTestBrief, don't retrieve as text response.
 
 <test brief example>
 # Mission Brief: Add Highest Priced Item
@@ -70,96 +71,79 @@ const mcpClient = await createMCPClient({
 
 const chromeTools = await mcpClient.tools();
 
-async function saveSessionState(updates: Record<string, unknown>) {
-  const filePath = join("public/session", "session_state.json");
+async function updateSessionMeta(updates: Record<string, unknown>) {
+  const filePath = join("public/session", "session_meta.json");
 
   try {
-    let currentState = {};
+    let currentMeta = {};
     try {
       const content = await readFile(filePath, "utf8");
-      currentState = JSON.parse(content);
+      currentMeta = JSON.parse(content);
     } catch {
-      // File doesn't exist yet, start with empty state
+      // File doesn't exist yet, start with empty meta
     }
 
-    const newState = { ...currentState, ...updates };
-    await writeFile(filePath, JSON.stringify(newState, null, 2), "utf8");
+    const newMeta = {
+      ...currentMeta,
+      ...updates,
+      lastUpdated: new Date().toISOString(),
+    };
+    await writeFile(filePath, JSON.stringify(newMeta, null, 2), "utf8");
 
     return {
       success: true,
-      message: "Session state updated",
-      state: newState,
+      message: "Session metadata updated",
+      meta: newMeta,
     };
   } catch (updateError) {
     return {
       success: false,
-      message: `Failed to update session state: ${updateError}`,
-      state: null,
+      message: `Failed to update session metadata: ${updateError}`,
+      meta: null,
     };
   }
 }
 
 const myTools = {
-  saveDocument: tool({
-    description: "Save a markdown document to the public/session directory",
+  updateTestBrief: tool({
+    description:
+      "Create/Update the test brief markdown content in session metadata",
     inputSchema: z.object({
-      filename: z
-        .string()
-        .describe("The filename for the document (without .md extension)"),
-      content: z.string().describe("The markdown content to save"),
+      content: z.string().describe("The complete test brief markdown content"),
     }),
-    execute: async ({ filename, content }) => {
-      const safeFilename = filename.endsWith(".md")
-        ? filename
-        : `${filename}.md`;
-      const filePath = join("public/session", safeFilename);
-
-      try {
-        await writeFile(filePath, content, "utf8");
-
-        return {
-          success: true,
-          message: `Document saved to ${filePath}`,
-          path: filePath,
-        };
-      } catch (saveError) {
-        return {
-          success: false,
-          message: `Failed to save document: ${saveError}`,
-          path: null,
-        };
-      }
+    execute: async ({ content }) => {
+      return await updateSessionMeta({ testBrief: content });
     },
   }),
 
-  updateSessionState: tool({
-    description: "Update session state with key-value pairs",
+  updateSessionMeta: tool({
+    description: "Update session metadata with key-value pairs",
     inputSchema: z.object({
-      state: z
+      updates: z
         .record(z.string(), z.unknown())
-        .describe("State updates to apply"),
+        .describe("Metadata updates to apply"),
     }),
-    execute: async ({ state }) => {
-      return await saveSessionState(state);
+    execute: async ({ updates }) => {
+      return await updateSessionMeta(updates);
     },
   }),
 
-  getSessionState: tool({
-    description: "Get current session state",
+  getSessionMeta: tool({
+    description: "Get current session metadata including test brief",
     inputSchema: z.object({}),
     execute: async () => {
-      const filePath = join("public/session", "session_state.json");
+      const filePath = join("public/session", "session_meta.json");
 
       try {
         const content = await readFile(filePath, "utf8");
         return {
           success: true,
-          state: JSON.parse(content),
+          meta: JSON.parse(content),
         };
       } catch {
         return {
           success: true,
-          state: {},
+          meta: {},
         };
       }
     },

@@ -12,6 +12,7 @@ interface SessionData {
     lastUpdated: string;
     sessionId: string;
     status: string;
+    testBrief?: string;
   };
   sessionState: Record<string, unknown>;
   files: string[];

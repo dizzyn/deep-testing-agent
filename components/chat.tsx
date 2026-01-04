@@ -3,10 +3,9 @@
 import { useChat } from "@ai-sdk/react";
 import type { ChromeAgentUIMessage } from "@/agents/explorer";
 import { ScreenshotToolView } from "./screenshot-tool-view";
-import { FileWriterToolView } from "./file-writer-tool-view";
-import { useActionState, useEffect, useRef, useState } from "react";
-
+import { TestBriefView } from "./test-brief-view";
 import type { SessionData } from "@/lib/session";
+import { useState, useRef, useEffect, useActionState } from "react";
 
 interface ChatProps {
   artifactExists: boolean;
@@ -32,7 +31,22 @@ export function Chat({ artifactExists, artifactContent }: ChatProps) {
           if (response.ok) {
             const conversationMessages = await response.json();
             if (conversationMessages.length > 0) {
-              setMessages(conversationMessages);
+              // Transform the conversation messages to match the expected format
+              const transformedMessages = conversationMessages.map(
+                (msg: {
+                  id: string;
+                  role: string;
+                  content: string;
+                  parts?: unknown[];
+                  createdAt: string;
+                }) => ({
+                  ...msg,
+                  parts: Array.isArray(msg.parts)
+                    ? msg.parts
+                    : JSON.parse(msg.content || "[]"),
+                })
+              );
+              setMessages(transformedMessages);
             }
           }
         } catch (error) {
@@ -104,12 +118,12 @@ export function Chat({ artifactExists, artifactContent }: ChatProps) {
 
                   <div className="mt-4 pt-4 border-t border-gray-700">
                     <a
-                      href="/session/test_brief.md"
+                      href="/session/session_meta.json"
                       target="_blank"
                       rel="noopener noreferrer"
                       className="inline-flex items-center gap-2 text-green-300 hover:text-green-100 text-sm transition-colors"
                     >
-                      <span>View Full Brief</span>
+                      <span>View Session Metadata</span>
                       <svg
                         className="w-4 h-4"
                         fill="none"
@@ -132,14 +146,38 @@ export function Chat({ artifactExists, artifactContent }: ChatProps) {
             messages.map((message, messageIndex) =>
               message.parts.map((part, partIndex) => {
                 switch (part.type) {
+                  case "tool-updateTestBrief":
+                    const testBriefPart = part as {
+                      input?: { content?: string };
+                      output?: { meta?: { testBrief?: string } };
+                    };
+                    return (
+                      <div
+                        key={`${messageIndex}-${partIndex}`}
+                        className="mb-6"
+                      >
+                        <TestBriefView
+                          testBrief={
+                            testBriefPart.input?.content ||
+                            testBriefPart.output?.meta?.testBrief ||
+                            ""
+                          }
+                        />
+                      </div>
+                    );
+
                   case "dynamic-tool":
                     const toolPart = part as {
                       toolName?: string;
                       state?: string;
+                      input?: { content?: string };
                       output?: {
                         success?: boolean;
                         path?: string;
                         message?: string;
+                        meta?: {
+                          testBrief?: string;
+                        };
                       };
                     };
 
@@ -155,14 +193,38 @@ export function Chat({ artifactExists, artifactContent }: ChatProps) {
                       );
                     }
 
-                    // Handle file writing tools (detect by output having success and path)
-                    if (toolPart.output?.success && toolPart.output?.path) {
+                    // Handle test brief update tool
+                    if (toolPart.toolName === "updateTestBrief") {
                       return (
                         <div
                           key={`${messageIndex}-${partIndex}`}
                           className="mb-6"
                         >
-                          <FileWriterToolView invocation={part} />
+                          <TestBriefView
+                            testBrief={
+                              toolPart.input?.content ||
+                              toolPart.output?.meta?.testBrief ||
+                              ""
+                            }
+                          />
+                        </div>
+                      );
+                    }
+
+                    // Handle file writing tools (detect by output having success and path)
+                    if (toolPart.output?.success && toolPart.output?.path) {
+                      return (
+                        <div
+                          key={`${messageIndex}-${partIndex}`}
+                          className="mb-6 bg-gray-900 border border-gray-700 rounded-lg p-4"
+                        >
+                          <div className="text-sm text-gray-400 mb-2">
+                            File: {toolPart.output.path}
+                          </div>
+                          <div className="text-sm text-green-300">
+                            {toolPart.output.message ||
+                              "File operation completed"}
+                          </div>
                         </div>
                       );
                     }
@@ -181,6 +243,7 @@ export function Chat({ artifactExists, artifactContent }: ChatProps) {
                         </div>
                       </div>
                     );
+
                   case "text":
                     return (
                       <div
@@ -199,9 +262,13 @@ export function Chat({ artifactExists, artifactContent }: ChatProps) {
                         </div>
                       </div>
                     );
-                  case "step-start":
-                    // Hide step-start messages for cleaner UI
+
+                  case "reasoning":
                     return null;
+
+                  case "step-start":
+                    return null;
+
                   default:
                     // Handle any tool invocation that starts with "tool-"
                     if (part.type.startsWith("tool-")) {
@@ -212,6 +279,9 @@ export function Chat({ artifactExists, artifactContent }: ChatProps) {
                           success?: boolean;
                           path?: string;
                           message?: string;
+                          meta?: {
+                            testBrief?: string;
+                          };
                         };
                       };
 
@@ -220,9 +290,15 @@ export function Chat({ artifactExists, artifactContent }: ChatProps) {
                         return (
                           <div
                             key={`${messageIndex}-${partIndex}`}
-                            className="mb-6"
+                            className="mb-6 bg-gray-900 border border-gray-700 rounded-lg p-4"
                           >
-                            <FileWriterToolView invocation={part} />
+                            <div className="text-sm text-gray-400 mb-2">
+                              File: {toolPart.output.path}
+                            </div>
+                            <div className="text-sm text-green-300">
+                              {toolPart.output.message ||
+                                "File operation completed"}
+                            </div>
                           </div>
                         );
                       }
@@ -237,6 +313,7 @@ export function Chat({ artifactExists, artifactContent }: ChatProps) {
                         </div>
                       );
                     }
+
                     return (
                       <div
                         key={`${messageIndex}-${partIndex}`}

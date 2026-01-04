@@ -6,6 +6,7 @@ export interface SessionData {
     sessionId: string;
     status: string;
     messageCount?: number;
+    testBrief?: string;
   };
   sessionState: Record<string, unknown>;
   files: string[];

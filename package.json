@@ -10,6 +10,7 @@
     "tsc": "tsc -noEmit"
   },
   "dependencies": {
+    "@ai-sdk/google": "^3.0.2",
     "@ai-sdk/mcp": "^1.0.2",
     "@ai-sdk/mistral": "^3.0.2",
     "@ai-sdk/openai": "^3.0.2",

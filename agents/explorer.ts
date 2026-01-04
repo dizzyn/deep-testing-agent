@@ -1,10 +1,7 @@
-import { ToolLoopAgent, InferAgentUIMessage, tool } from "ai";
-import { createMistral } from "@ai-sdk/mistral";
-import { createMCPClient } from "@ai-sdk/mcp";
-import { Experimental_StdioMCPTransport as StdioClientTransport } from "@ai-sdk/mcp/mcp-stdio";
-import { readFile, writeFile } from "fs/promises";
-import { join } from "path";
-import { z } from "zod";
+import { ToolLoopAgent, InferAgentUIMessage } from "ai";
+import { createModelInstance } from "../lib/model-factory";
+import { getChromeTools } from "../lib/mcp-client";
+import { agentTools } from "../lib/agent-tools";
 
 const instructions = `
 You are a web testing agent with Chrome DevTools.
@@ -62,102 +59,19 @@ _Agent Note: I will scan the default inventory list to find the highest price. I
 </test brief example>
 .`;
 
-const mcpClient = await createMCPClient({
-  transport: new StdioClientTransport({
-    command: "node",
-    args: ["./chrome-devtools-mcp/build/src/index.js"],
-  }),
-});
+const chromeTools = await getChromeTools();
 
-const chromeTools = await mcpClient.tools();
+export function createChromeAgent(modelId: string = "mistral/devstral-latest") {
+  const model = createModelInstance(modelId);
 
-async function updateSessionMeta(updates: Record<string, unknown>) {
-  const filePath = join("public/session", "session_meta.json");
-
-  try {
-    let currentMeta = {};
-    try {
-      const content = await readFile(filePath, "utf8");
-      currentMeta = JSON.parse(content);
-    } catch {
-      // File doesn't exist yet, start with empty meta
-    }
-
-    const newMeta = {
-      ...currentMeta,
-      ...updates,
-      lastUpdated: new Date().toISOString(),
-    };
-    await writeFile(filePath, JSON.stringify(newMeta, null, 2), "utf8");
-
-    return {
-      success: true,
-      message: "Session metadata updated",
-      meta: newMeta,
-    };
-  } catch (updateError) {
-    return {
-      success: false,
-      message: `Failed to update session metadata: ${updateError}`,
-      meta: null,
-    };
-  }
+  return new ToolLoopAgent({
+    model,
+    instructions,
+    tools: { ...chromeTools, ...agentTools },
+  });
 }
 
-const myTools = {
-  updateTestBrief: tool({
-    description:
-      "Create/Update the test brief markdown content in session metadata",
-    inputSchema: z.object({
-      content: z.string().describe("The complete test brief markdown content"),
-    }),
-    execute: async ({ content }) => {
-      return await updateSessionMeta({ testBrief: content });
-    },
-  }),
-
-  updateSessionMeta: tool({
-    description: "Update session metadata with key-value pairs",
-    inputSchema: z.object({
-      updates: z
-        .record(z.string(), z.unknown())
-        .describe("Metadata updates to apply"),
-    }),
-    execute: async ({ updates }) => {
-      return await updateSessionMeta(updates);
-    },
-  }),
-
-  getSessionMeta: tool({
-    description: "Get current session metadata including test brief",
-    inputSchema: z.object({}),
-    execute: async () => {
-      const filePath = join("public/session", "session_meta.json");
-
-      try {
-        const content = await readFile(filePath, "utf8");
-        return {
-          success: true,
-          meta: JSON.parse(content),
-        };
-      } catch {
-        return {
-          success: true,
-          meta: {},
-        };
-      }
-    },
-  }),
-};
-
-const mistral = createMistral({
-  apiKey: process.env.MISTRAL_API_KEY || "",
-});
-
-export const chromeAgent = new ToolLoopAgent({
-  model: mistral("devstral-latest"),
-  instructions,
-  tools: { ...chromeTools, ...myTools },
-});
+// Default agent for backward compatibility
+export const chromeAgent = createChromeAgent();
 
 export type ChromeAgentUIMessage = InferAgentUIMessage<typeof chromeAgent>;

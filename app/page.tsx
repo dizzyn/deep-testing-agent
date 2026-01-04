@@ -3,6 +3,7 @@
 import { Chat } from "@/components/chat";
 import { TestRun } from "@/components/test-run";
 import { SessionControls } from "@/components/session-controls";
+import { ModelSwitcher } from "@/components/model-switcher";
 import { useEffect, useState } from "react";
 import { fetchSessionData, type SessionData } from "@/lib/session";
 
@@ -50,12 +51,15 @@ export default function HomePage() {
 
   return (
     <div className="min-h-screen bg-black text-white flex flex-col">
-      {/* Session Controls */}
-      <SessionControls
-        sessionData={sessionData}
-        onSessionReset={handleSessionReset}
-        onSessionLoad={handleSessionLoad}
-      />
+      {/* Header with Session Controls and Model Switcher */}
+      <div className="flex items-center justify-between p-4 border-b border-gray-800">
+        <SessionControls
+          sessionData={sessionData}
+          onSessionReset={handleSessionReset}
+          onSessionLoad={handleSessionLoad}
+        />
+        <ModelSwitcher />
+      </div>
 
       {/* Main Content Area */}
       <div className="flex-1 flex">

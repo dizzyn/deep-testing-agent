@@ -1,12 +1,20 @@
 import { createAgentUIStreamResponse } from "ai";
-import { chromeAgent } from "@/agents/explorer";
+import { createChromeAgent } from "@/agents/explorer";
 import { saveMessage } from "@/lib/conversation";
 
 export async function POST(request: Request) {
-  const { messages } = await request.json();
+  const { messages, model } = await request.json();
+
+  // Filter out messages with empty parts to prevent validation errors
+  const validMessages = messages.filter(
+    (msg: any) => msg.parts && Array.isArray(msg.parts) && msg.parts.length > 0
+  );
+
+  // Create agent with the selected model
+  const agent = createChromeAgent(model || "mistral/devstral-latest");
 
   // Persist the latest user message
-  const lastUserMessage = messages[messages.length - 1];
+  const lastUserMessage = validMessages[validMessages.length - 1];
   if (lastUserMessage && lastUserMessage.role === "user") {
     await saveMessage({
       id: lastUserMessage.id || crypto.randomUUID(),
@@ -18,12 +26,17 @@ export async function POST(request: Request) {
   }
 
   return createAgentUIStreamResponse({
-    agent: chromeAgent,
-    uiMessages: messages,
+    agent,
+    uiMessages: validMessages,
     onFinish: async ({ messages: finalMessages }) => {
       // Find and save the assistant's response
       const lastAssistantMessage = finalMessages[finalMessages.length - 1];
-      if (lastAssistantMessage && lastAssistantMessage.role === "assistant") {
+      if (
+        lastAssistantMessage &&
+        lastAssistantMessage.role === "assistant" &&
+        lastAssistantMessage.parts &&
+        lastAssistantMessage.parts.length > 0
+      ) {
         await saveMessage({
           id: lastAssistantMessage.id || crypto.randomUUID(),
           role: "assistant",

@@ -4,6 +4,7 @@ import { useChat } from "@ai-sdk/react";
 import type { ChromeAgentUIMessage } from "@/agents/explorer";
 import { ScreenshotToolView } from "./screenshot-tool-view";
 import { TestBriefView } from "./test-brief-view";
+import { getSelectedModel } from "./model-switcher";
 import type { SessionData } from "@/lib/session";
 import { useState, useRef, useEffect, useActionState } from "react";
 
@@ -64,7 +65,14 @@ export function Chat({ artifactExists, artifactContent }: ChatProps) {
     async (_, formData) => {
       const text = formData.get("text") as string;
       if (text.trim()) {
-        sendMessage({ text });
+        sendMessage(
+          { text },
+          {
+            body: {
+              model: getSelectedModel(),
+            },
+          }
+        );
         if (inputRef.current) {
           inputRef.current.value = "";
         }

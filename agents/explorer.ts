@@ -24,7 +24,6 @@ Your goal is: Ask for a vague test task -> visit the website only once -> Prepar
     - acceptance criteria
     - supposed agent instruction
     - given passwords, links, ids (if any)
-    - status (DRAFT, APPROVED, IN_TEST, INTERRUPTED, PASSED, FAILED)
 6. Once the brief is approved by user, you have done
 
 # Tools:
@@ -35,7 +34,6 @@ Your goal is: Ask for a vague test task -> visit the website only once -> Prepar
 # Mission Brief: Add Highest Priced Item
 
 **Target URL:** https://www.saucedemo.com/
-**Status:** DRAFT (Waiting for Approval)
 
 ## 🎯 Mission Goal
 
@@ -118,12 +116,6 @@ const myTools = {
 
       try {
         await writeFile(filePath, content, "utf8");
-
-        // Extract status from content for session state
-        const statusMatch = content.match(/\*\*Status:\*\*\s*([A-Z_]+)/);
-        if (statusMatch && statusMatch[1]) {
-          await saveSessionState({ briefStatus: statusMatch[1] });
-        }
 
         return {
           success: true,

@@ -14,11 +14,7 @@ interface ChatProps {
   sessionData: SessionData | null;
 }
 
-export function Chat({
-  artifactExists,
-  artifactContent,
-  sessionData,
-}: ChatProps) {
+export function Chat({ artifactExists, artifactContent }: ChatProps) {
   const [hasLoadedHistory, setHasLoadedHistory] = useState(false);
 
   const { messages, sendMessage, setMessages } =

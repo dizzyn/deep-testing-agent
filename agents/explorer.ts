@@ -2,7 +2,7 @@ import { ToolLoopAgent, InferAgentUIMessage, tool } from "ai";
 import { createMistral } from "@ai-sdk/mistral";
 import { createMCPClient } from "@ai-sdk/mcp";
 import { Experimental_StdioMCPTransport as StdioClientTransport } from "@ai-sdk/mcp/mcp-stdio";
-import { writeFile } from "fs/promises";
+import { readFile, writeFile } from "fs/promises";
 import { join } from "path";
 import { z } from "zod";
 
@@ -72,6 +72,35 @@ const mcpClient = await createMCPClient({
 
 const chromeTools = await mcpClient.tools();
 
+async function saveSessionState(updates: Record<string, unknown>) {
+  const filePath = join("public/session", "session_state.json");
+
+  try {
+    let currentState = {};
+    try {
+      const content = await readFile(filePath, "utf8");
+      currentState = JSON.parse(content);
+    } catch {
+      // File doesn't exist yet, start with empty state
+    }
+
+    const newState = { ...currentState, ...updates };
+    await writeFile(filePath, JSON.stringify(newState, null, 2), "utf8");
+
+    return {
+      success: true,
+      message: "Session state updated",
+      state: newState,
+    };
+  } catch (updateError) {
+    return {
+      success: false,
+      message: `Failed to update session state: ${updateError}`,
+      state: null,
+    };
+  }
+}
+
 const myTools = {
   saveDocument: tool({
     description: "Save a markdown document to the public/session directory",
@@ -82,7 +111,6 @@ const myTools = {
       content: z.string().describe("The markdown content to save"),
     }),
     execute: async ({ filename, content }) => {
-      // Ensure filename has .md extension
       const safeFilename = filename.endsWith(".md")
         ? filename
         : `${filename}.md`;
@@ -90,16 +118,56 @@ const myTools = {
 
       try {
         await writeFile(filePath, content, "utf8");
+
+        // Extract status from content for session state
+        const statusMatch = content.match(/\*\*Status:\*\*\s*([A-Z_]+)/);
+        if (statusMatch && statusMatch[1]) {
+          await saveSessionState({ briefStatus: statusMatch[1] });
+        }
+
         return {
           success: true,
           message: `Document saved to ${filePath}`,
           path: filePath,
         };
-      } catch (error) {
+      } catch (saveError) {
         return {
           success: false,
-          message: `Failed to save document: ${error}`,
+          message: `Failed to save document: ${saveError}`,
           path: null,
+        };
+      }
+    },
+  }),
+
+  updateSessionState: tool({
+    description: "Update session state with key-value pairs",
+    inputSchema: z.object({
+      state: z
+        .record(z.string(), z.unknown())
+        .describe("State updates to apply"),
+    }),
+    execute: async ({ state }) => {
+      return await saveSessionState(state);
+    },
+  }),
+
+  getSessionState: tool({
+    description: "Get current session state",
+    inputSchema: z.object({}),
+    execute: async () => {
+      const filePath = join("public/session", "session_state.json");
+
+      try {
+        const content = await readFile(filePath, "utf8");
+        return {
+          success: true,
+          state: JSON.parse(content),
+        };
+      } catch {
+        return {
+          success: true,
+          state: {},
         };
       }
     },

@@ -4,17 +4,51 @@ import { useChat } from "@ai-sdk/react";
 import type { ChromeAgentUIMessage } from "@/agents/explorer";
 import { ScreenshotToolView } from "./screenshot-tool-view";
 import { FileWriterToolView } from "./file-writer-tool-view";
-import { useActionState, useEffect, useRef } from "react";
+import { useActionState, useEffect, useRef, useState } from "react";
+
+import type { SessionData } from "@/lib/session";
 
 interface ChatProps {
   artifactExists: boolean;
   artifactContent: string;
+  sessionData: SessionData | null;
 }
 
-export function Chat({ artifactExists, artifactContent }: ChatProps) {
-  const { messages, sendMessage } = useChat<ChromeAgentUIMessage>();
+export function Chat({
+  artifactExists,
+  artifactContent,
+  sessionData,
+}: ChatProps) {
+  const [hasLoadedHistory, setHasLoadedHistory] = useState(false);
+
+  const { messages, sendMessage, setMessages } =
+    useChat<ChromeAgentUIMessage>();
+
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+
+  // Load conversation history on mount
+  useEffect(() => {
+    const loadHistory = async (): Promise<void> => {
+      if (!hasLoadedHistory) {
+        try {
+          const response = await fetch("/api/conversation");
+          if (response.ok) {
+            const conversationMessages = await response.json();
+            if (conversationMessages.length > 0) {
+              setMessages(conversationMessages);
+            }
+          }
+        } catch (error) {
+          console.error("Failed to load conversation history:", error);
+        } finally {
+          setHasLoadedHistory(true);
+        }
+      }
+    };
+
+    loadHistory();
+  }, [hasLoadedHistory, setMessages]);
 
   const [, dispatch] = useActionState<unknown, FormData>(
     async (_, formData) => {

@@ -2,58 +2,96 @@
 
 import { Chat } from "@/components/chat";
 import { TestRun } from "@/components/test-run";
+import { SessionControls } from "@/components/session-controls";
 import { useEffect, useState } from "react";
+import { fetchSessionData, type SessionData } from "@/lib/session";
 
 export default function HomePage() {
   const [artifactExists, setArtifactExists] = useState<boolean>(false);
   const [artifactContent, setArtifactContent] = useState<string>("");
+  const [sessionData, setSessionData] = useState<SessionData | null>(null);
 
-  // Check for artifact file existence
+  const loadSessionData = async (): Promise<void> => {
+    try {
+      const data = await fetchSessionData();
+      setSessionData(data);
+    } catch (error) {
+      console.error("Failed to load session data:", error);
+    }
+  };
+
+  const handleSessionReset = (): void => {
+    setSessionData(null);
+    setArtifactExists(false);
+    setArtifactContent("");
+    // Clear chat history flag so it can be reloaded
+    if (typeof window !== "undefined") {
+      window.location.reload();
+    }
+  };
+
+  const handleSessionLoad = (data: SessionData): void => {
+    setSessionData(data);
+  };
+
   useEffect(() => {
-    const checkArtifact = async () => {
-      try {
-        const response = await fetch("/session/test_brief.md");
-        if (response.ok) {
-          const content = await response.text();
-          setArtifactExists(true);
-          setArtifactContent(content);
-        } else {
-          setArtifactExists(false);
+    const initializeSession = async (): Promise<void> => {
+      await loadSessionData();
+    };
+
+    initializeSession();
+
+    const interval = setInterval(() => {
+      loadSessionData();
+    }, 2000);
+
+    return () => clearInterval(interval);
+  }, []);
+
+  // Check artifact when sessionData changes
+  useEffect(() => {
+    let isCancelled = false;
+
+    const checkArtifact = async (): Promise<void> => {
+      const shouldCheckArtifact = sessionData?.files.includes("test_brief.md");
+
+      if (shouldCheckArtifact) {
+        try {
+          const response = await fetch("/session/test_brief.md");
+          if (!isCancelled) {
+            if (response.ok) {
+              const content = await response.text();
+              setArtifactExists(true);
+              setArtifactContent(content);
+            } else {
+              setArtifactExists(false);
+            }
+          }
+        } catch {
+          if (!isCancelled) {
+            setArtifactExists(false);
+          }
         }
-      } catch {
+      } else if (sessionData && !isCancelled) {
         setArtifactExists(false);
       }
     };
 
     checkArtifact();
-    // Check periodically for updates
-    const interval = setInterval(checkArtifact, 2000);
-    return () => clearInterval(interval);
-  }, []);
+
+    return () => {
+      isCancelled = true;
+    };
+  }, [sessionData]);
 
   return (
     <div className="min-h-screen bg-black text-white flex flex-col">
-      {/* Artifact Status Banner */}
-      {artifactExists && (
-        <div className="bg-green-900 border-b border-green-700 px-6 py-3">
-          <div className="max-w-full mx-auto flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
-              <span className="text-green-100 font-medium">
-                Test Brief Artifact Available
-              </span>
-            </div>
-            <a
-              href="/session/test_brief.md"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-green-300 hover:text-green-100 text-sm underline transition-colors"
-            >
-              View Brief →
-            </a>
-          </div>
-        </div>
-      )}
+      {/* Session Controls */}
+      <SessionControls
+        sessionData={sessionData}
+        onSessionReset={handleSessionReset}
+        onSessionLoad={handleSessionLoad}
+      />
 
       {/* Main Content Area */}
       <div className="flex-1 flex">
@@ -62,6 +100,7 @@ export default function HomePage() {
           <Chat
             artifactExists={artifactExists}
             artifactContent={artifactContent}
+            sessionData={sessionData}
           />
         </div>
 

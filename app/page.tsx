@@ -5,14 +5,11 @@ import { TestRun } from "@/components/test-run";
 import { SessionControls } from "@/components/session-controls";
 import { ModelSwitcher } from "@/components/model-switcher";
 import { useEffect, useState } from "react";
-import { fetchSessionData, type SessionData } from "@/lib/session";
+import type { SessionData } from "./api/session/route";
+import { fetchSessionData } from "@/lib/session";
 
 export default function HomePage() {
   const [sessionData, setSessionData] = useState<SessionData | null>(null);
-
-  // Derived state from sessionData
-  const artifactExists = Boolean(sessionData?.sessionMeta?.testBrief);
-  const artifactContent = sessionData?.sessionMeta?.testBrief || "";
 
   const loadSessionData = async (): Promise<void> => {
     try {
@@ -31,10 +28,6 @@ export default function HomePage() {
     }
   };
 
-  const handleSessionLoad = (data: SessionData): void => {
-    setSessionData(data);
-  };
-
   useEffect(() => {
     const initializeSession = async (): Promise<void> => {
       await loadSessionData();
@@ -49,34 +42,32 @@ export default function HomePage() {
     return () => clearInterval(interval);
   }, []);
 
+  if (!sessionData) return <div>...loading</div>;
+
   return (
     <div className="min-h-screen bg-black text-white flex flex-col">
-      {/* Header with Session Controls and Model Switcher */}
-      <div className="flex items-center justify-between p-4 border-b border-gray-800">
-        <SessionControls
-          sessionData={sessionData}
-          onSessionReset={handleSessionReset}
-          onSessionLoad={handleSessionLoad}
-        />
-        <ModelSwitcher />
+      <div className="sticky top-0 z-50 bg-black border-b border-gray-800">
+        <div className="flex items-center justify-between px-4 py-3 max-w-full">
+          <div className="flex items-center gap-4">
+            <SessionControls
+              sessionData={sessionData}
+              onSessionReset={handleSessionReset}
+            />
+          </div>
+
+          {/* Right: Model Switcher */}
+          <div className="flex items-center">
+            <ModelSwitcher />
+          </div>
+        </div>
       </div>
 
       {/* Main Content Area */}
-      <div className="flex-1 flex">
-        {/* Chat Section */}
-        <div className={`${artifactExists ? "w-1/2" : "w-full"} relative`}>
-          <Chat
-            artifactExists={artifactExists}
-            artifactContent={artifactContent}
-            sessionData={sessionData}
-          />
-        </div>
-
-        {/* Test Run Section - Only show when brief exists */}
-        {artifactExists && (
-          <div className="w-1/2">
-            <TestRun artifactContent={artifactContent} />
-          </div>
+      <div className="flex-1 flex min-h-0 h-full">
+        {!sessionData?.testBrief ? (
+          <Chat sessionData={sessionData} />
+        ) : (
+          <TestRun sessionData={sessionData} />
         )}
       </div>
     </div>

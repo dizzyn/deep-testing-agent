@@ -1,35 +1,20 @@
-TODO
+# Web App Testing Agent
 
-Product # 1:
+Testing agent inspired by deep research. Simply say what you want to test.
 
-- [ ] No garbage, local only
-- [ ] User story:
+- Check if we can still add items into shopping cart
+- Confirm that the login works as described in the documentation
+- Try to bring break the the registration by invalid emails
 
-  1. [ ] Test for me page xyz, and tell me
-  2. [ ] First visit + screenshot
-  3. [ ] Brief (with custom renderer) + Acceptance
-  4. [ ] Testing until it is tested
-  5. [ ] Display test result (custom renderer)
+# How to install
 
-- [ ] Single agent
-- [ ] Global state - into context
+- Install packages
+- Build mcp
+- fill local.env
+- run next.js
 
-- [ ] Shiny readme
+# What it is based on
 
----
-
-- [x] Funkční chat
-
-  - [ ] Open router
-  - [x] Mistral
-  - [ ] Tools
-
-- [ ] Mission brief
-- [ ] Simple Testing Agent
-
-  - [ ] Testing view
-
-- [ ] Lang chain
-- [ ] Navigator / Executor
-
-- [ ] MCP
+- CDT MCP
+- AI SDK 6
+- Open Router

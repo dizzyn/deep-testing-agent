@@ -59,9 +59,11 @@ _Agent Note: I will scan the default inventory list to find the highest price. I
 </test brief example>
 .`;
 
-const chromeTools = await getChromeTools();
+const chromeTools = await getChromeTools("explorer");
 
-export function createChromeAgent(modelId: string = "mistral/devstral-latest") {
+export function createExplorerAgent(modelId: string) {
+  if (!modelId) throw "Missing model type";
+
   const model = createModelInstance(modelId);
 
   return new ToolLoopAgent({
@@ -71,7 +73,6 @@ export function createChromeAgent(modelId: string = "mistral/devstral-latest") {
   });
 }
 
-// Default agent for backward compatibility
-export const chromeAgent = createChromeAgent();
-
-export type ChromeAgentUIMessage = InferAgentUIMessage<typeof chromeAgent>;
+export type ExplorerAgentUIMessage = InferAgentUIMessage<
+  ReturnType<typeof createExplorerAgent>
+>;

@@ -4,6 +4,17 @@ import { existsSync } from "fs";
 
 const SESSION_DIR = join(process.cwd(), "public/session");
 const CONVERSATION_ID = "default-session";
+const TESTING_CONVERSATION_ID = "testing-session";
+
+type ConversationType = "default" | "testing";
+
+function getConversationFileName(type: ConversationType): string {
+  return type === "testing" ? "testing.json" : "conversation.json";
+}
+
+function getConversationId(type: ConversationType): string {
+  return type === "testing" ? TESTING_CONVERSATION_ID : CONVERSATION_ID;
+}
 
 interface Message {
   id: string;
@@ -19,10 +30,13 @@ async function ensureSessionDir(): Promise<void> {
   }
 }
 
-export async function loadConversation(): Promise<Message[]> {
+export async function loadConversation(
+  type: ConversationType
+): Promise<Message[]> {
   try {
     await ensureSessionDir();
-    const filePath = join(SESSION_DIR, "conversation.json");
+    const fileName = getConversationFileName(type);
+    const filePath = join(SESSION_DIR, fileName);
 
     if (!existsSync(filePath)) {
       return [];
@@ -36,13 +50,18 @@ export async function loadConversation(): Promise<Message[]> {
   }
 }
 
-export async function saveMessage(message: Message): Promise<void> {
+export async function saveMessage(
+  type: ConversationType,
+  message: Message
+): Promise<void> {
   try {
     await ensureSessionDir();
-    const filePath = join(SESSION_DIR, "conversation.json");
+    const fileName = getConversationFileName(type);
+    const filePath = join(SESSION_DIR, fileName);
+    const conversationId = getConversationId(type);
 
     // Load existing messages
-    const existingMessages = await loadConversation();
+    const existingMessages = await loadConversation(type);
 
     // Add new message
     const updatedMessages = [
@@ -57,7 +76,7 @@ export async function saveMessage(message: Message): Promise<void> {
     await writeFile(filePath, JSON.stringify(updatedMessages, null, 2), "utf8");
 
     // Update session meta while preserving existing data
-    let existingMeta = {};
+    let existingMeta: Record<string, unknown> = {};
     try {
       const metaContent = await readFile(
         join(SESSION_DIR, "session_meta.json"),
@@ -68,13 +87,17 @@ export async function saveMessage(message: Message): Promise<void> {
       // File doesn't exist or is invalid, start fresh
     }
 
-    const sessionMeta = {
+    const sessionMeta: Record<string, unknown> = {
       ...existingMeta,
       lastUpdated: new Date().toISOString(),
-      messageCount: updatedMessages.length,
       status: "active",
-      conversationId: CONVERSATION_ID,
+      conversationId,
     };
+
+    // Preserve testBrief if it exists
+    if (existingMeta.testBrief) {
+      sessionMeta.testBrief = existingMeta.testBrief;
+    }
 
     await writeFile(
       join(SESSION_DIR, "session_meta.json"),
@@ -86,14 +109,15 @@ export async function saveMessage(message: Message): Promise<void> {
   }
 }
 
-export async function clearConversation(): Promise<void> {
+export async function clearConversation(type: ConversationType): Promise<void> {
   try {
     await ensureSessionDir();
-    const filePath = join(SESSION_DIR, "conversation.json");
+    const fileName = getConversationFileName(type);
+    const filePath = join(SESSION_DIR, fileName);
     await writeFile(filePath, "[]", "utf8");
   } catch (error) {
     console.error("Error clearing conversation:", error);
   }
 }
 
-export { CONVERSATION_ID };
+export { CONVERSATION_ID, TESTING_CONVERSATION_ID, type ConversationType };

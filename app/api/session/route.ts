@@ -5,16 +5,14 @@ import { existsSync } from "fs";
 
 const SESSION_DIR = join(process.cwd(), "public/session");
 
-interface SessionData {
+export interface SessionData {
+  createdAt: string;
+  lastUpdated: string;
+  sessionId: string;
+  status: string;
   chatHistory: unknown[];
-  sessionMeta: {
-    createdAt: string;
-    lastUpdated: string;
-    sessionId: string;
-    status: string;
-    testBrief?: string;
-  };
-  sessionState: Record<string, unknown>;
+  testHistory: unknown[];
+  testBrief?: string;
   files: string[];
 }
 
@@ -31,17 +29,27 @@ export async function GET() {
     await ensureSessionDir();
 
     const files = await readdir(SESSION_DIR);
-    const sessionData: SessionData = {
+    let sessionData: SessionData = {
       chatHistory: [],
-      sessionMeta: {
-        createdAt: new Date().toISOString(),
-        lastUpdated: new Date().toISOString(),
-        sessionId: "default",
-        status: "active",
-      },
-      sessionState: {},
+      testHistory: [],
       files: [],
+      createdAt: new Date().toISOString(),
+      lastUpdated: new Date().toISOString(),
+      sessionId: "default",
+      status: "active",
     };
+
+    // Read session meta
+    if (files.includes("session_meta.json")) {
+      const metaContent = await readFile(
+        join(SESSION_DIR, "session_meta.json"),
+        "utf8"
+      );
+      sessionData = {
+        ...sessionData,
+        ...JSON.parse(metaContent),
+      };
+    }
 
     // Read chat history
     if (files.includes("chat_history.json")) {
@@ -52,29 +60,26 @@ export async function GET() {
       sessionData.chatHistory = JSON.parse(chatContent);
     }
 
-    // Read session meta
-    if (files.includes("session_meta.json")) {
-      const metaContent = await readFile(
-        join(SESSION_DIR, "session_meta.json"),
+    // Read chat history
+    if (files.includes("test_history.json")) {
+      const testContent = await readFile(
+        join(SESSION_DIR, "test_history.json"),
         "utf8"
       );
-      sessionData.sessionMeta = {
-        ...sessionData.sessionMeta,
-        ...JSON.parse(metaContent),
-      };
+      sessionData.testHistory = JSON.parse(testContent);
     }
 
     // Read session state
-    if (files.includes("session_state.json")) {
-      const stateContent = await readFile(
-        join(SESSION_DIR, "session_state.json"),
-        "utf8"
-      );
-      sessionData.sessionState = JSON.parse(stateContent);
-    }
+    // if (files.includes("session_state.json")) {
+    // const stateContent = await readFile(
+    //   join(SESSION_DIR, "session_state.json"),
+    //   "utf8"
+    // );
+    // sessionData.sessionState = JSON.parse(stateContent);
+    // }
 
     // List all files
-    sessionData.files = files;
+    // sessionData.files = files;
 
     return NextResponse.json(sessionData);
   } catch (error) {
@@ -112,15 +117,6 @@ export async function POST(request: NextRequest) {
       await writeFile(
         join(SESSION_DIR, "session_meta.json"),
         JSON.stringify(updatedMeta, null, 2),
-        "utf8"
-      );
-    }
-
-    // Save session state
-    if (sessionState) {
-      await writeFile(
-        join(SESSION_DIR, "session_state.json"),
-        JSON.stringify(sessionState, null, 2),
         "utf8"
       );
     }

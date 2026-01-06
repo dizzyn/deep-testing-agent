@@ -28,11 +28,7 @@ export function ScreenshotToolView({ invocation }: { invocation: unknown }) {
     <div className="bg-gray-900 border border-gray-700 rounded-lg p-4 text-left">
       {tool.state === "output-available" && outputFilePath ? (
         <div className="space-y-3">
-          <div className="text-sm text-gray-400 mb-3">Screenshot</div>
           <div className="space-y-2">
-            <div className="text-sm text-gray-300">
-              Screenshot saved to: {outputFilePath}
-            </div>
             {outputFilePath.startsWith("/public/") ||
             outputFilePath.startsWith("public/") ? (
               <div className="border border-gray-600 rounded-lg overflow-hidden">

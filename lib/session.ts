@@ -1,16 +1,4 @@
-export interface SessionData {
-  chatHistory: unknown[];
-  sessionMeta: {
-    createdAt: string;
-    lastUpdated: string;
-    sessionId: string;
-    status: string;
-    messageCount?: number;
-    testBrief?: string;
-  };
-  sessionState: Record<string, unknown>;
-  files: string[];
-}
+import type { SessionData } from "@/app/api/session/route";
 
 export async function fetchSessionData(): Promise<SessionData> {
   const response = await fetch("/api/session");

@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
+import dynamic from "next/dynamic";
 
 export interface ModelConfig {
   id: string;
@@ -45,19 +46,12 @@ const MODELS: ModelConfig[] = [
 const STORAGE_KEY = "selected-model";
 const DEFAULT_MODEL = "mistral/devstral-latest";
 
-export function ModelSwitcher() {
-  const [selectedModel, setSelectedModel] = useState<string>(DEFAULT_MODEL);
-  const [isOpen, setIsOpen] = useState(false);
-  const [isLoaded, setIsLoaded] = useState(false);
-
-  useEffect(() => {
-    // Only run on client side after hydration
+function ModelSwitcherClient() {
+  const [selectedModel, setSelectedModel] = useState<string>(() => {
     const saved = localStorage.getItem(STORAGE_KEY);
-    if (saved && MODELS.find((m) => m.id === saved)) {
-      setSelectedModel(saved);
-    }
-    setIsLoaded(true);
-  }, []);
+    return saved && MODELS.find((m) => m.id === saved) ? saved : DEFAULT_MODEL;
+  });
+  const [isOpen, setIsOpen] = useState(false);
 
   const handleModelChange = (modelId: string): void => {
     setSelectedModel(modelId);
@@ -67,39 +61,11 @@ export function ModelSwitcher() {
 
   const currentModel = MODELS.find((m) => m.id === selectedModel) || MODELS[0];
 
-  // Show loading state until client-side hydration is complete
-  if (!isLoaded) {
-    return (
-      <div className="relative">
-        <div className="flex items-center gap-2 px-3 py-2 bg-gray-900 border border-gray-700 rounded-lg text-sm">
-          <div className="flex items-center gap-2">
-            <div className="w-2 h-2 rounded-full bg-gray-500 animate-pulse" />
-            <span className="text-gray-400">Loading...</span>
-          </div>
-          <svg
-            className="w-4 h-4 text-gray-400"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M19 9l-7 7-7-7"
-            />
-          </svg>
-        </div>
-      </div>
-    );
-  }
-
   return (
     <div className="relative">
       <button
         onClick={() => setIsOpen(!isOpen)}
         className="flex items-center gap-2 px-3 py-2 bg-gray-900 border border-gray-700 rounded-lg hover:bg-gray-800 transition-colors text-sm"
-        suppressHydrationWarning
       >
         <div className="flex items-center gap-2">
           <div
@@ -132,7 +98,7 @@ export function ModelSwitcher() {
             className="fixed inset-0 z-10"
             onClick={() => setIsOpen(false)}
           />
-          <div className="absolute top-full left-0 mt-1 w-64 bg-gray-900 border border-gray-700 rounded-lg shadow-lg z-20">
+          <div className="absolute top-full right-0 mt-1 w-64 bg-gray-900 border border-gray-700 rounded-lg shadow-lg z-20">
             <div className="p-2">
               <div className="text-xs text-gray-400 px-2 py-1 mb-1">
                 Available Models
@@ -180,6 +146,38 @@ export function ModelSwitcher() {
     </div>
   );
 }
+
+const LoadingState = () => (
+  <div className="relative">
+    <div className="flex items-center gap-2 px-3 py-2 bg-gray-900 border border-gray-700 rounded-lg text-sm">
+      <div className="flex items-center gap-2">
+        <div className="w-2 h-2 rounded-full bg-gray-500 animate-pulse" />
+        <span className="text-gray-400">Loading...</span>
+      </div>
+      <svg
+        className="w-4 h-4 text-gray-400"
+        fill="none"
+        stroke="currentColor"
+        viewBox="0 0 24 24"
+      >
+        <path
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          strokeWidth={2}
+          d="M19 9l-7 7-7-7"
+        />
+      </svg>
+    </div>
+  </div>
+);
+
+export const ModelSwitcher = dynamic(
+  () => Promise.resolve(ModelSwitcherClient),
+  {
+    ssr: false,
+    loading: LoadingState,
+  }
+);
 
 export function getSelectedModel(): string {
   if (typeof window === "undefined") {

@@ -15,6 +15,7 @@ import {
   TEST_STORAGE_KEY,
   DEFAULT_TEST_MODEL,
 } from "@/lib/models";
+import { updateSessionData } from "@/lib/session";
 
 const conversationType = "testing" satisfies ConversationType;
 
@@ -95,6 +96,15 @@ export function TestRun() {
       alert("Failed to reset conversation. Please try again.");
     } finally {
       setIsResetting(false);
+    }
+  }
+
+  async function handleBackToChat(): Promise<void> {
+    try {
+      await updateSessionData({ status: "brief" });
+    } catch (error) {
+      console.error("Failed to update session status:", error);
+      alert("Failed to return to chat. Please try again.");
     }
   }
 
@@ -238,6 +248,13 @@ export function TestRun() {
                     </>
                   )}
                 </button>
+
+                <button
+                  onClick={handleBackToChat}
+                  className="w-full bg-zinc-600 hover:bg-zinc-700 text-white font-medium py-3 px-6 rounded-lg transition-colors"
+                >
+                  Back to chat
+                </button>
               </div>
 
               <div className="text-xs text-zinc-500 space-y-1">
@@ -319,7 +336,7 @@ export function TestRun() {
                   onClick={startTesting}
                   className="cursor-pointer hover:text-white"
                 >
-                  restart test
+                  test suspended, restart
                 </a>
                 ]
               </div>
@@ -355,7 +372,7 @@ export function TestRun() {
                       onClick={handleReset}
                       className="cursor-pointer hover:text-white"
                     >
-                      reset
+                      reset testing
                     </a>
                     ]
                   </>

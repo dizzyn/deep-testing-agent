@@ -54,17 +54,17 @@ export const agentTools = {
     },
   }),
 
-  updateSessionMeta: tool({
-    description: "Update session metadata with key-value pairs",
-    inputSchema: z.object({
-      updates: z
-        .record(z.string(), z.unknown())
-        .describe("Metadata updates to apply"),
-    }),
-    execute: async ({ updates }) => {
-      return await updateSessionMeta(updates);
-    },
-  }),
+  // updateSessionMeta: tool({
+  //   description: "Update session metadata with key-value pairs",
+  //   inputSchema: z.object({
+  //     updates: z
+  //       .record(z.string(), z.unknown())
+  //       .describe("Metadata updates to apply"),
+  //   }),
+  //   execute: async ({ updates }) => {
+  //     return await updateSessionMeta(updates);
+  //   },
+  // }),
 
   getSessionMeta: tool({
     description: "Get current session metadata including test brief",

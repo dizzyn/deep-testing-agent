@@ -1,5 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
-import { loadConversation, type ConversationType } from "@/lib/conversation";
+import {
+  loadConversation,
+  clearConversation,
+  type ConversationType,
+} from "@/lib/conversation";
 import { createAgentUIStreamResponse } from "ai";
 import { createExplorerAgent } from "@/agents/explorer";
 import { createTesterAgent } from "@/agents/tester";
@@ -84,19 +88,20 @@ export async function POST(request: Request) {
   });
 }
 
-// export async function DELETE() {
-// const conversationType =
-//   request?.nextUrl?.searchParams.get("conversationType");
+export async function DELETE(request: NextRequest) {
+  const conversationType =
+    request?.nextUrl?.searchParams.get("conversationType");
 
-// if (!conversationType) throw "Empty conversationType";
-//   try {
-//     await clearConversation();
-//     return NextResponse.json({ success: true });
-//   } catch (error) {
-//     console.error("Error clearing conversation:", error);
-//     return NextResponse.json(
-//       { error: "Failed to clear conversation" },
-//       { status: 500 }
-//     );
-//   }
-// }
+  if (!conversationType) throw "Empty conversationType";
+
+  try {
+    await clearConversation(conversationType as ConversationType);
+    return NextResponse.json({ success: true });
+  } catch (error) {
+    console.error("Error clearing conversation:", error);
+    return NextResponse.json(
+      { error: "Failed to clear conversation" },
+      { status: 500 }
+    );
+  }
+}

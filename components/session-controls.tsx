@@ -2,17 +2,14 @@
 
 import { useState } from "react";
 import { resetSession } from "@/lib/session";
-import { SessionData } from "@/app/api/session/route";
 
 interface SessionControlsProps {
-  sessionData: SessionData | null;
   onSessionReset: () => void;
 }
 
-export function SessionControls({
-  sessionData,
-  onSessionReset,
-}: SessionControlsProps) {
+const linkCls = "cursor-pointer hover:text-white";
+
+export function SessionControls({ onSessionReset }: SessionControlsProps) {
   const [isResetting, setIsResetting] = useState(false);
   const [showConfirmation, setShowConfirmation] = useState(false);
 
@@ -39,21 +36,37 @@ export function SessionControls({
     }
   };
 
+  if (isResetting) {
+    return <>...reseting</>;
+  }
+
+  if (showConfirmation) {
+    return (
+      <>
+        Are you sure [
+        <a onClick={handleResetSession} className={linkCls}>
+          yes
+        </a>
+        ] [
+        <a className={linkCls} onClick={() => setShowConfirmation(false)}>
+          no
+        </a>
+        ]
+      </>
+    );
+  }
+
   return (
     <>
-      {/* Reset Session Button */}
-      <button
+      [
+      <a
         onClick={handleResetSession}
-        disabled={isResetting}
-        className="px-4 py-2 border border-white text-white bg-transparent rounded hover:bg-white hover:text-black disabled:opacity-50 transition-colors"
         onBlur={() => setShowConfirmation(false)}
+        className={linkCls}
       >
-        {isResetting
-          ? "Resetting..."
-          : showConfirmation
-          ? "Are you sure?"
-          : "Reset Session"}
-      </button>
+        Reset Session
+      </a>
+      ]
     </>
   );
 }

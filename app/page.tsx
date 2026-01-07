@@ -3,7 +3,6 @@
 import { Chat } from "@/components/chat";
 import { TestRun } from "@/components/test-run";
 import { SessionControls } from "@/components/session-controls";
-import { ModelSwitcher } from "@/components/model-switcher";
 import { useEffect, useState } from "react";
 import type { SessionData } from "./api/session/route";
 import { fetchSessionData } from "@/lib/session";
@@ -17,14 +16,6 @@ export default function HomePage() {
       setSessionData(data);
     } catch (error) {
       console.error("Failed to load session data:", error);
-    }
-  };
-
-  const handleSessionReset = (): void => {
-    setSessionData(null);
-    // Clear chat history flag so it can be reloaded
-    if (typeof window !== "undefined") {
-      window.location.reload();
     }
   };
 
@@ -42,34 +33,34 @@ export default function HomePage() {
     return () => clearInterval(interval);
   }, []);
 
-  if (!sessionData) return <div>...loading</div>;
-
-  return (
-    <div className="min-h-screen bg-black text-white flex flex-col">
-      <div className="sticky top-0 z-50 bg-black border-b border-gray-800">
-        <div className="flex items-center justify-between px-4 py-3 max-w-full">
-          <div className="flex items-center gap-4">
-            <SessionControls
-              sessionData={sessionData}
-              onSessionReset={handleSessionReset}
-            />
-          </div>
-
-          {/* Right: Model Switcher */}
-          <div className="flex items-center">
-            <ModelSwitcher />
-          </div>
+  if (!sessionData) {
+    return (
+      <div className="min-h-screen bg-black text-white flex items-center justify-center">
+        <div className="flex items-center space-x-3">
+          <div className="w-6 h-6 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+          <span className="text-gray-300">Loading...</span>
         </div>
       </div>
+    );
+  }
 
-      {/* Main Content Area */}
-      <div className="flex-1 flex min-h-0 h-full">
-        {!sessionData?.testBrief ? (
-          <Chat sessionData={sessionData} />
-        ) : (
-          <TestRun sessionData={sessionData} />
-        )}
-      </div>
-    </div>
+  return (
+    <>
+      <header className="flex-none bg-zinc-950/80 backdrop-blur-md border-b border-zinc-800 p-4 z-20">
+        <div className="max-w-3xl mx-auto flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div>
+              <h1 className="font-bold text-sm leading-tight text-zinc-100">
+                Deep Testing Agent
+              </h1>
+            </div>
+          </div>
+          <p className="text-[11px] text-zinc-400 font-mono">
+            <SessionControls onSessionReset={() => window.location.reload()} />
+          </p>
+        </div>
+      </header>
+      {sessionData.status != "testing" ? <Chat /> : <TestRun />}
+    </>
   );
 }

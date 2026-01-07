@@ -9,7 +9,7 @@ export interface SessionData {
   createdAt: string;
   lastUpdated: string;
   sessionId: string;
-  status: string;
+  status: "brief" | "testing";
   chatHistory: unknown[];
   testHistory: unknown[];
   testBrief?: string;
@@ -36,7 +36,7 @@ export async function GET() {
       createdAt: new Date().toISOString(),
       lastUpdated: new Date().toISOString(),
       sessionId: "default",
-      status: "active",
+      status: "brief",
     };
 
     // Read session meta
@@ -69,15 +69,6 @@ export async function GET() {
       sessionData.testHistory = JSON.parse(testContent);
     }
 
-    // Read session state
-    // if (files.includes("session_state.json")) {
-    // const stateContent = await readFile(
-    //   join(SESSION_DIR, "session_state.json"),
-    //   "utf8"
-    // );
-    // sessionData.sessionState = JSON.parse(stateContent);
-    // }
-
     // List all files
     // sessionData.files = files;
 
@@ -95,18 +86,9 @@ export async function GET() {
 export async function POST(request: NextRequest) {
   try {
     await ensureSessionDir();
-    const { chatHistory, sessionMeta, sessionState } = await request.json();
+    const sessionMeta = await request.json();
 
     const timestamp = new Date().toISOString();
-
-    // Save chat history
-    if (chatHistory) {
-      await writeFile(
-        join(SESSION_DIR, "chat_history.json"),
-        JSON.stringify(chatHistory, null, 2),
-        "utf8"
-      );
-    }
 
     // Save/update session meta
     if (sessionMeta) {

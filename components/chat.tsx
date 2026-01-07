@@ -3,165 +3,219 @@
 import { useChat } from "@ai-sdk/react";
 import type { ExplorerAgentUIMessage } from "@/agents/explorer";
 import { ChatBubble } from "./common/chat-bubble";
-import { getSelectedModel } from "./model-switcher";
-import { useState, useRef, useEffect } from "react";
-import type { SessionData } from "@/app/api/session/route";
+import { useState, useRef, useEffect, useCallback } from "react";
 import type { ConversationType } from "@/lib/conversation";
+import { loadConversationHistory } from "@/lib/conversation-client";
+import { ModelSelectorText } from "./model-selector-text";
+import {
+  CHAT_MODELS,
+  CHAT_STORAGE_KEY,
+  DEFAULT_CHAT_MODEL,
+} from "@/lib/models";
 
-interface ChatProps {
-  sessionData: SessionData;
-}
+const conversationType = "default" satisfies ConversationType;
 
-export function Chat({ sessionData: { testBrief } }: ChatProps) {
-  const [hasLoadedHistory, setHasLoadedHistory] = useState(false);
-  const [inputValue, setInputValue] = useState("");
-
-  const { messages, sendMessage, setMessages } =
+export function Chat() {
+  // 1. Setup & State
+  const { messages, sendMessage, setMessages, status } =
     useChat<ExplorerAgentUIMessage>();
 
-  const messagesEndRef = useRef<HTMLDivElement>(null);
+  // Derive loading state from status
+  const isGenerating = status === "submitted" || status === "streaming";
+
+  const [input, setInput] = useState("");
+  const [showScrollButton, setShowScrollButton] = useState(false);
+  const [hasLoadedHistory, setHasLoadedHistory] = useState(false);
+  const [selectedModel, setSelectedModel] = useState<string>(() => {
+    if (typeof window === "undefined") return DEFAULT_CHAT_MODEL;
+    const saved = localStorage.getItem(CHAT_STORAGE_KEY);
+    return saved && CHAT_MODELS.find((m) => m.id === saved)
+      ? saved
+      : DEFAULT_CHAT_MODEL;
+  });
+
+  const scrollRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
-  // const handleTaskClick = (task: {
-  //   title: string;
-  //   description: string;
-  // }): void => {
-  //   setInputValue(task.description);
-  // };
+  // Handle model selection
+  const handleModelChange = (modelId: string): void => {
+    setSelectedModel(modelId);
+    if (typeof window !== "undefined") {
+      localStorage.setItem(CHAT_STORAGE_KEY, modelId);
+    }
+  };
 
-  const conversationType = "default" satisfies ConversationType;
+  // 2. Scroll Logic
+  const scrollToBottom = useCallback((smooth = true) => {
+    const container = scrollRef.current;
+    if (container) {
+      container.scrollTo({
+        top: container.scrollHeight,
+        behavior: smooth ? "smooth" : "auto",
+      });
+      setShowScrollButton(false);
+    }
+  }, []);
 
-  // Load conversation history on mount
+  const handleScroll = useCallback(() => {
+    const container = scrollRef.current;
+    if (!container) return;
+
+    const { scrollTop, scrollHeight, clientHeight } = container;
+    const distanceFromBottom = scrollHeight - scrollTop - clientHeight;
+
+    // Show button if user is more than 100px from the bottom
+    setShowScrollButton(distanceFromBottom > 100);
+  }, []);
+
+  // 3. Auto-scroll on new messages
   useEffect(() => {
-    const loadHistory = async (): Promise<void> => {
-      if (!hasLoadedHistory) {
-        try {
-          const response = await fetch(
-            "/api/chat?conversationType=" + conversationType
-          );
-          if (response.ok) {
-            const conversationMessages = await response.json();
-            if (conversationMessages.length > 0) {
-              // Transform the conversation messages to match the expected format
-              const transformedMessages = conversationMessages.map(
-                (msg: {
-                  id: string;
-                  role: string;
-                  content: string;
-                  parts?: unknown[];
-                  createdAt: string;
-                }) => ({
-                  ...msg,
-                  parts: Array.isArray(msg.parts)
-                    ? msg.parts
-                    : JSON.parse(msg.content || "[]"),
-                })
-              );
-              setMessages(transformedMessages);
-            }
-          }
-        } catch (error) {
-          console.error("Failed to load conversation history:", error);
-        } finally {
-          setHasLoadedHistory(true);
+    // Only auto-scroll if the user hasn't manually scrolled up
+    if (!showScrollButton) {
+      scrollToBottom();
+    }
+  }, [messages, showScrollButton, scrollToBottom]);
+
+  // 4. Load History
+  useEffect(() => {
+    if (hasLoadedHistory) return;
+
+    const loadHistory = async () => {
+      try {
+        const formatted = await loadConversationHistory(conversationType);
+        if (formatted.length > 0) {
+          setMessages(formatted);
         }
+      } catch (err) {
+        console.error("History load error:", err);
+      } finally {
+        setHasLoadedHistory(true);
       }
     };
-
     loadHistory();
-  }, [conversationType, hasLoadedHistory, setMessages]);
+  }, [hasLoadedHistory, setMessages]);
 
-  // Auto-resize textarea
-  useEffect(() => {
-    const textarea = textareaRef.current;
-    if (textarea) {
-      textarea.style.height = "auto";
-      textarea.style.height = Math.min(textarea.scrollHeight, 120) + "px";
-    }
-  }, [inputValue]);
+  // 5. Handlers
+  const handleSubmit = async (e?: React.FormEvent) => {
+    e?.preventDefault();
+    if (!input.trim() || isGenerating) return;
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (inputValue.trim()) {
-      sendMessage(
-        { text: inputValue.trim() },
-        {
-          body: {
-            model: getSelectedModel(),
-            conversationType,
-          },
-        }
-      );
-      setInputValue("");
-    }
+    const text = input.trim();
+    setInput("");
+
+    // Reset textarea height
+    if (textareaRef.current) textareaRef.current.style.height = "auto";
+
+    // Force scroll to bottom when sending
+    scrollToBottom();
+
+    await sendMessage(
+      { text },
+      {
+        body: { model: selectedModel, conversationType },
+      }
+    );
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
-      handleSubmit(e);
+      handleSubmit();
     }
   };
 
-  useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages]);
+  const handleInput = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    setInput(e.target.value);
+    // Auto-resize
+    e.target.style.height = "auto";
+    e.target.style.height = Math.min(e.target.scrollHeight, 200) + "px";
+  };
 
   return (
-    <div className="flex flex-col h-full min-h-0">
-      {/* Scrollable Content Area */}
-      <div className="flex-1 overflow-y-auto min-h-0">
-        <div className="max-w-4xl mx-auto px-6 py-8 pb-4">
-          {messages.length === 0 ? (
-            <div className="space-y-6">
-              <div className="text-center">
-                <div className="text-gray-400 text-lg mb-4">
-                  Ask me to test websites, take screenshots, or analyze web
-                  performance...
-                </div>
-              </div>
-            </div>
-          ) : (
-            <div className="space-y-6">
-              {messages.map((message, messageIndex) => (
-                <ChatBubble
-                  key={message.id || messageIndex}
-                  message={message}
-                  messageIndex={messageIndex}
-                />
-              ))}
-            </div>
-          )}
-          <div ref={messagesEndRef} />
+    <>
+      <main
+        ref={scrollRef}
+        onScroll={handleScroll}
+        className="flex-1 overflow-y-auto p-4 custom-scrollbar scroll-smooth relative"
+      >
+        <div className="max-w-3xl mx-auto space-y-8 pb-4">
+          {messages.map((msg, idx) => (
+            <ChatBubble key={msg.id || idx} message={msg} messageIndex={idx} />
+          ))}
         </div>
-      </div>
+      </main>
 
-      {/* Sticky Input Area */}
-      <div className="flex-shrink-0 bg-black border-t border-gray-800">
-        <div className="max-w-4xl mx-auto px-6 py-4">
-          <form onSubmit={handleSubmit} className="flex gap-3 items-end">
-            <div className="flex-1">
-              <textarea
-                ref={textareaRef}
-                value={inputValue}
-                onChange={(e) => setInputValue(e.target.value)}
-                onKeyDown={handleKeyDown}
-                placeholder="Ask me to test a website or take a screenshot..."
-                className="w-full bg-gray-900 border border-gray-700 rounded-lg px-4 py-3 text-white placeholder-gray-400 focus:outline-none focus:border-gray-500 transition-colors resize-none min-h-[48px] max-h-[120px]"
-                rows={1}
-                autoComplete="off"
+      {/* Floating Scroll Button */}
+      {showScrollButton && (
+        <div className="absolute bottom-24 left-0 right-0 flex justify-center z-30 pointer-events-none">
+          <button
+            onClick={() => scrollToBottom(true)}
+            className="pointer-events-auto bg-zinc-800 hover:bg-zinc-700 text-white p-2 rounded-full shadow-lg border border-zinc-700 transition-all animate-in fade-in slide-in-from-bottom-2"
+            aria-label="Scroll to bottom"
+          >
+            <svg
+              className="w-5 h-5"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M19 14l-7 7m0 0l-7-7m7 7V3"
               />
-            </div>
+            </svg>
+          </button>
+        </div>
+      )}
+
+      <footer className="flex-none bg-zinc-950 border-t border-zinc-800 p-4 z-20">
+        <div className="max-w-3xl mx-auto">
+          {/* Model Selector above input */}
+          <div className="text-center mb-3 text-[11px] text-zinc-400 font-mono">
+            <ModelSelectorText
+              models={CHAT_MODELS}
+              selectedModel={selectedModel}
+              onModelChange={handleModelChange}
+              className="mx-auto"
+            />
+          </div>
+
+          <form onSubmit={handleSubmit} className="relative">
+            <textarea
+              ref={textareaRef}
+              rows={1}
+              value={input}
+              onChange={handleInput}
+              onKeyDown={handleKeyDown}
+              disabled={isGenerating}
+              placeholder="Type your message..."
+              className="w-full bg-zinc-900 text-zinc-100 border border-zinc-700 rounded-xl px-4 py-3 pr-12 resize-none overflow-hidden min-h-[48px] max-h-48 focus:outline-none focus:ring-2 focus:ring-blue-600 disabled:opacity-50"
+            />
             <button
               type="submit"
-              disabled={!inputValue.trim()}
-              className="bg-white text-black px-6 py-3 rounded-lg hover:bg-gray-200 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed flex-shrink-0"
+              disabled={!input.trim() || isGenerating}
+              className="absolute bottom-3 right-3 text-zinc-400 hover:text-white disabled:opacity-50 transition-colors"
             >
-              Send
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="20"
+                height="20"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <line x1="22" x2="11" y1="2" y2="13" />
+                <polygon points="22 2 15 22 11 13 2 9 22 2" />
+              </svg>
             </button>
           </form>
         </div>
-      </div>
-    </div>
+      </footer>
+    </>
   );
 }

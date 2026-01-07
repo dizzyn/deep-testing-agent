@@ -90,7 +90,6 @@ export async function saveMessage(
     const sessionMeta: Record<string, unknown> = {
       ...existingMeta,
       lastUpdated: new Date().toISOString(),
-      status: "active",
       conversationId,
     };
 

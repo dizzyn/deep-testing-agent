@@ -1,20 +1,25 @@
 # Web App Testing Agent
 
-Testing agent inspired by deep research. Simply say what you want to test.
+AI-powered testing agent that automates web application testing through natural language commands.
 
-- Check if we can still add items into shopping cart
-- Confirm that the login works as described in the documentation
-- Try to bring break the the registration by invalid emails
+## Quick Start
 
-# How to install
+```bash
+pnpm install
+cd chrome-devtools-mcp && pnpm build
+cp .env.example .env.local  # Configure your API keys
+pnpm dev
+```
 
-- Install packages
-- Build mcp
-- fill local.env
-- run next.js
+## Usage Examples
 
-# What it is based on
+- "Check if we can still add items to shopping cart"
+- "Confirm that login works as described in documentation"
+- "Try to break registration with invalid emails"
 
-- CDT MCP
-- AI SDK 6
-- Open Router
+## Tech Stack
+
+- Chrome DevTools MCP for browser automation
+- AI SDK 6 for intelligent test generation
+- OpenRouter for LLM access
+- Next.js for the web interface

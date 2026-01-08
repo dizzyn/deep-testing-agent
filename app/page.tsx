@@ -1,7 +1,7 @@
 "use client";
 
 import { Chat } from "@/components/chat";
-import { TestRun } from "@/components/test-run";
+import { SplitView } from "@/components/split-view";
 import { SessionControls } from "@/components/session-controls";
 import { useEffect, useState } from "react";
 import type { SessionData } from "./api/session/route";
@@ -44,10 +44,12 @@ export default function HomePage() {
     );
   }
 
+  const showSideBySide = sessionData.status === "testing";
+
   return (
     <>
       <header className="flex-none bg-zinc-950/80 backdrop-blur-md border-b border-zinc-800 p-4 z-20">
-        <div className="max-w-3xl mx-auto flex items-center justify-between">
+        <div className="max-w-full mx-auto flex items-center justify-between px-4">
           <div className="flex items-center gap-3">
             <div>
               <h1 className="font-bold text-sm leading-tight text-zinc-100">
@@ -60,7 +62,8 @@ export default function HomePage() {
           </p>
         </div>
       </header>
-      {sessionData.status != "testing" ? <Chat /> : <TestRun />}
+
+      {showSideBySide ? <SplitView /> : <Chat />}
     </>
   );
 }

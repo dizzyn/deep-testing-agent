@@ -6,16 +6,14 @@ import { ChatBubble } from "./common/chat-bubble";
 import { useState, useRef, useEffect, useCallback } from "react";
 import type { ConversationType } from "@/lib/conversation";
 import { loadConversationHistory } from "@/lib/conversation-client";
-import { ModelSelectorText } from "./model-selector-text";
-import {
-  CHAT_MODELS,
-  CHAT_STORAGE_KEY,
-  DEFAULT_CHAT_MODEL,
-} from "@/lib/models";
 
 const conversationType = "default" satisfies ConversationType;
 
-export function Chat() {
+interface ChatProps {
+  selectedModel: string;
+}
+
+export function Chat({ selectedModel }: ChatProps) {
   // 1. Setup & State
   const { messages, sendMessage, setMessages, status } =
     useChat<ExplorerAgentUIMessage>();
@@ -26,24 +24,8 @@ export function Chat() {
   const [input, setInput] = useState("");
   const [showScrollButton, setShowScrollButton] = useState(false);
   const [hasLoadedHistory, setHasLoadedHistory] = useState(false);
-  const [selectedModel, setSelectedModel] = useState<string>(() => {
-    if (typeof window === "undefined") return DEFAULT_CHAT_MODEL;
-    const saved = localStorage.getItem(CHAT_STORAGE_KEY);
-    return saved && CHAT_MODELS.find((m) => m.id === saved)
-      ? saved
-      : DEFAULT_CHAT_MODEL;
-  });
-
   const scrollRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
-
-  // Handle model selection
-  const handleModelChange = (modelId: string): void => {
-    setSelectedModel(modelId);
-    if (typeof window !== "undefined") {
-      localStorage.setItem(CHAT_STORAGE_KEY, modelId);
-    }
-  };
 
   // 2. Scroll Logic
   const scrollToBottom = useCallback((smooth = true) => {
@@ -172,16 +154,6 @@ export function Chat() {
 
       <footer className="flex-none bg-zinc-950 border-t border-zinc-800 p-4 z-20">
         <div className="max-w-3xl mx-auto">
-          {/* Model Selector above input */}
-          <div className="text-center mb-3 text-[11px] text-zinc-400 font-mono">
-            <ModelSelectorText
-              models={CHAT_MODELS}
-              selectedModel={selectedModel}
-              onModelChange={handleModelChange}
-              className="mx-auto"
-            />
-          </div>
-
           <form onSubmit={handleSubmit} className="relative">
             <textarea
               ref={textareaRef}
@@ -196,7 +168,7 @@ export function Chat() {
             <button
               type="submit"
               disabled={!input.trim() || isGenerating}
-              className="absolute bottom-3 right-3 text-zinc-400 hover:text-white disabled:opacity-50 transition-colors"
+              className="absolute top-1/2 -translate-y-[12px] right-3 text-zinc-400 hover:text-white disabled:opacity-50 transition-colors"
             >
               <svg
                 xmlns="http://www.w3.org/2000/svg"

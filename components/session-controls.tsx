@@ -7,7 +7,7 @@ interface SessionControlsProps {
   onSessionReset: () => void;
 }
 
-const linkCls = "cursor-pointer hover:text-white";
+const linkCls = "cursor-pointer hover:text-white hover:underline";
 
 export function SessionControls({ onSessionReset }: SessionControlsProps) {
   const [isResetting, setIsResetting] = useState(false);
@@ -43,12 +43,15 @@ export function SessionControls({ onSessionReset }: SessionControlsProps) {
   if (showConfirmation) {
     return (
       <>
-        Are you sure [
-        <a onClick={handleResetSession} className={linkCls}>
+        Remove all session data? [
+        <a onClick={handleResetSession} className={linkCls + " text-white"}>
           yes
         </a>
         ] [
-        <a className={linkCls} onClick={() => setShowConfirmation(false)}>
+        <a
+          className={linkCls + " text-white"}
+          onClick={() => setShowConfirmation(false)}
+        >
           no
         </a>
         ]

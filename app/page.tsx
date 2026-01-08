@@ -3,12 +3,16 @@
 import { Chat } from "@/components/chat";
 import { SplitView } from "@/components/split-view";
 import { SessionControls } from "@/components/session-controls";
+import { ModelSelectorCompact } from "@/components/model-selector-compact";
+import { ModelProvider, useModel } from "@/lib/model-context";
+import { MODELS } from "@/lib/models";
 import { useEffect, useState } from "react";
 import type { SessionData } from "./api/session/route";
 import { fetchSessionData } from "@/lib/session";
 
-export default function HomePage() {
+function AppContent() {
   const [sessionData, setSessionData] = useState<SessionData | null>(null);
+  const { selectedModel, setSelectedModel } = useModel();
 
   const loadSessionData = async (): Promise<void> => {
     try {
@@ -56,6 +60,11 @@ export default function HomePage() {
                 Deep Testing Agent
               </h1>
             </div>
+            <ModelSelectorCompact
+              models={MODELS}
+              selectedModel={selectedModel}
+              onModelChange={setSelectedModel}
+            />
           </div>
           <p className="text-[11px] text-zinc-400 font-mono">
             <SessionControls onSessionReset={() => window.location.reload()} />
@@ -63,7 +72,19 @@ export default function HomePage() {
         </div>
       </header>
 
-      {showSideBySide ? <SplitView /> : <Chat />}
+      {showSideBySide ? (
+        <SplitView selectedModel={selectedModel} />
+      ) : (
+        <Chat selectedModel={selectedModel} />
+      )}
     </>
+  );
+}
+
+export default function HomePage() {
+  return (
+    <ModelProvider>
+      <AppContent />
+    </ModelProvider>
   );
 }

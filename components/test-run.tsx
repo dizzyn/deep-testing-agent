@@ -9,17 +9,16 @@ import {
   loadConversationHistory,
   clearConversation,
 } from "@/lib/conversation-client";
-import { ModelSelector } from "@/lib/model-selector";
-import {
-  TEST_MODELS,
-  TEST_STORAGE_KEY,
-  DEFAULT_TEST_MODEL,
-} from "@/lib/models";
 import { updateSessionData } from "@/lib/session";
+import { MODELS } from "@/lib/models";
 
 const conversationType = "testing" satisfies ConversationType;
 
-export function TestRun() {
+interface TestRunProps {
+  selectedModel: string;
+}
+
+export function TestRun({ selectedModel }: TestRunProps) {
   // 1. Setup & State
   const { messages, sendMessage, setMessages, status, stop } =
     useChat<ExplorerAgentUIMessage>();
@@ -32,23 +31,8 @@ export function TestRun() {
   const [isPaused, setIsPaused] = useState(false);
   const [showResetConfirmation, setShowResetConfirmation] = useState(false);
   const [isResetting, setIsResetting] = useState(false);
-  const [selectedModel, setSelectedModel] = useState<string>(() => {
-    if (typeof window === "undefined") return DEFAULT_TEST_MODEL;
-    const saved = localStorage.getItem(TEST_STORAGE_KEY);
-    return saved && TEST_MODELS.find((m) => m.id === saved)
-      ? saved
-      : DEFAULT_TEST_MODEL;
-  });
 
   const scrollRef = useRef<HTMLDivElement>(null);
-
-  // Handle model selection
-  const handleModelChange = (modelId: string): void => {
-    setSelectedModel(modelId);
-    if (typeof window !== "undefined") {
-      localStorage.setItem(TEST_STORAGE_KEY, modelId);
-    }
-  };
 
   function startTesting() {
     sendMessage(
@@ -99,14 +83,14 @@ export function TestRun() {
     }
   }
 
-  async function handleBackToChat(): Promise<void> {
-    try {
-      await updateSessionData({ status: "brief" });
-    } catch (error) {
-      console.error("Failed to update session status:", error);
-      alert("Failed to return to chat. Please try again.");
-    }
-  }
+  // async function handleBackToChat(): Promise<void> {
+  //   try {
+  //     await updateSessionData({ status: "brief" });
+  //   } catch (error) {
+  //     console.error("Failed to update session status:", error);
+  //     alert("Failed to return to chat. Please try again.");
+  //   }
+  // }
 
   // 2. Scroll Logic
   const scrollToBottom = useCallback((smooth = true) => {
@@ -181,30 +165,18 @@ export function TestRun() {
             <div className="text-center space-y-6 max-w-md">
               <div className="space-y-2">
                 <h2 className="text-xl font-semibold text-white">
-                  Test Configuration
+                  Agentic Test Runner
                 </h2>
                 <p className="text-zinc-400 text-sm">
-                  Select a model and start testing your application
+                  The test will analyze the application and provide feedback
                 </p>
               </div>
 
               <div className="space-y-4">
-                <div className="space-y-2">
-                  <label className="block text-sm font-medium text-zinc-300">
-                    Test Model
-                  </label>
-                  <ModelSelector
-                    models={TEST_MODELS}
-                    selectedModel={selectedModel}
-                    onModelChange={handleModelChange}
-                    label="Test Models"
-                  />
-                </div>
-
                 <button
                   onClick={startTesting}
                   disabled={isGenerating}
-                  className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-blue-800 disabled:opacity-50 text-white font-medium py-3 px-6 rounded-lg transition-colors flex items-center justify-center gap-2"
+                  className="w-full bg-black border border-gray-400 hover:border-white disabled:border-gray-600 disabled:opacity-50 text-white font-medium py-3 px-6 rounded-lg transition-colors flex items-center justify-center gap-2"
                 >
                   {isGenerating ? (
                     <>
@@ -230,38 +202,9 @@ export function TestRun() {
                       Starting Test...
                     </>
                   ) : (
-                    <>
-                      <svg
-                        className="w-4 h-4"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M14.828 14.828a4 4 0 01-5.656 0M9 10h1m4 0h1m-6 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-                        />
-                      </svg>
-                      Start Test
-                    </>
+                    <>Start Test</>
                   )}
                 </button>
-
-                <button
-                  onClick={handleBackToChat}
-                  className="w-full bg-zinc-600 hover:bg-zinc-700 text-white font-medium py-3 px-6 rounded-lg transition-colors"
-                >
-                  Back to chat
-                </button>
-              </div>
-
-              <div className="text-xs text-zinc-500 space-y-1">
-                <p>
-                  The test will analyze your application and provide feedback
-                </p>
-                <p>Make sure your application is running before starting</p>
               </div>
             </div>
           </div>
@@ -295,19 +238,9 @@ export function TestRun() {
 
       <footer className="flex-none bg-zinc-950 border-t border-zinc-800 p-4 z-20">
         <div className="max-w-3xl mx-auto flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            {messages.length > 0 && (
-              <div className="text-sm text-zinc-400">
-                Model:{" "}
-                {TEST_MODELS.find((m) => m.id === selectedModel)?.name ||
-                  selectedModel}
-              </div>
-            )}
-          </div>
-
           <div className="flex items-center gap-4 text-zinc-400">
             {/* Control buttons */}
-            {isGenerating ? (
+            {/* {isGenerating ? (
               <div className="flex items-center gap-2">
                 [
                 <a
@@ -340,7 +273,7 @@ export function TestRun() {
                 </a>
                 ]
               </div>
-            ) : null}
+            ) : null} */}
 
             {/* Reset button - always available when there are messages */}
             {messages.length > 0 && (
@@ -349,17 +282,17 @@ export function TestRun() {
                   <>...resetting</>
                 ) : showResetConfirmation ? (
                   <>
-                    Are you sure [
+                    Remove all test data? [
                     <a
                       onClick={handleReset}
-                      className="cursor-pointer hover:text-white"
+                      className="cursor-pointer hover:underline text-white"
                     >
                       yes
                     </a>
                     ] [
                     <a
                       onClick={() => setShowResetConfirmation(false)}
-                      className="cursor-pointer hover:text-white"
+                      className="cursor-pointer hover:underline text-white"
                     >
                       no
                     </a>
@@ -370,7 +303,7 @@ export function TestRun() {
                     [
                     <a
                       onClick={handleReset}
-                      className="cursor-pointer hover:text-white"
+                      className="cursor-pointer hover:text-white hover:underline"
                     >
                       reset testing
                     </a>

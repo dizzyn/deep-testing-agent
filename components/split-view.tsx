@@ -3,7 +3,11 @@
 import { Chat } from "./chat";
 import { TestRun } from "./test-run";
 
-export function SplitView() {
+interface SplitViewProps {
+  selectedModel: string;
+}
+
+export function SplitView({ selectedModel }: SplitViewProps) {
   return (
     <div className="flex-1 flex overflow-hidden">
       <div className="flex-1 flex flex-col border-r border-zinc-800">
@@ -12,7 +16,7 @@ export function SplitView() {
             Chat
           </h2>
         </div>
-        <Chat />
+        <Chat selectedModel={selectedModel} />
       </div>
       <div className="flex-1 flex flex-col">
         <div className="flex-none bg-zinc-900/50 border-b border-zinc-800 px-4 py-2">
@@ -20,7 +24,7 @@ export function SplitView() {
             Test Run
           </h2>
         </div>
-        <TestRun />
+        <TestRun selectedModel={selectedModel} />
       </div>
     </div>
   );

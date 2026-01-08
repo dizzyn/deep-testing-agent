@@ -48,7 +48,7 @@ export function TestBriefView({ testBrief }: TestBriefData) {
         onClick={handleRunTest}
         className="px-3 py-1 rounded text-xs font-medium transition-colors bg-blue-600 hover:bg-blue-700 text-white"
       >
-        Run Test
+        Enter test mode
       </button>
     ) : undefined;
 

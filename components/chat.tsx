@@ -3,6 +3,7 @@
 import { useChat } from "@ai-sdk/react";
 import type { ExplorerAgentUIMessage } from "@/agents/explorer";
 import { ChatBubble } from "./common/chat-bubble";
+import { DemoTasks } from "./demo-tasks";
 import { useState, useRef, useEffect, useCallback } from "react";
 import type { ConversationType } from "@/lib/conversation";
 import { loadConversationHistory } from "@/lib/conversation-client";
@@ -113,6 +114,19 @@ export function Chat({ selectedModel }: ChatProps) {
     e.target.style.height = Math.min(e.target.scrollHeight, 200) + "px";
   };
 
+  const handleTaskClick = (task: { title: string; description: string }) => {
+    setInput(task.description);
+  };
+
+  // Auto-resize textarea when input changes (including from demo tasks)
+  useEffect(() => {
+    if (textareaRef.current) {
+      textareaRef.current.style.height = "auto";
+      textareaRef.current.style.height =
+        Math.min(textareaRef.current.scrollHeight, 200) + "px";
+    }
+  }, [input]);
+
   return (
     <>
       <main
@@ -121,9 +135,84 @@ export function Chat({ selectedModel }: ChatProps) {
         className="flex-1 overflow-y-auto p-4 custom-scrollbar scroll-smooth relative"
       >
         <div className="max-w-3xl mx-auto space-y-8 pb-4">
-          {messages.map((msg, idx) => (
-            <ChatBubble key={msg.id || idx} message={msg} messageIndex={idx} />
-          ))}
+          {messages.length === 0 && hasLoadedHistory ? (
+            <div className="flex flex-col min-h-[calc(100vh-200px)] py-8">
+              {/* Header Section - Top */}
+              <div className="flex-none text-center space-y-6 mb-12">
+                <h1 className="text-4xl font-bold text-zinc-100">
+                  Deep Testing Agent
+                </h1>
+                <p className="text-xl text-zinc-400 max-w-2xl mx-auto leading-relaxed">
+                  QA testing on autopilot. Just point me to a URL, and I’ll
+                  handle the rest.
+                </p>
+              </div>
+
+              {/* How it works - Middle */}
+              <div className="flex-1 flex flex-col justify-center">
+                <div className="text-center space-y-4 mb-16">
+                  <div className="max-w-2xl mx-auto">
+                    <ul className="space-y-4 text-center">
+                      <li className="flex flex-col items-center space-y-2">
+                        <div>
+                          <div className="text-zinc-100 font-medium mb-1">
+                            1. Input Goal
+                          </div>
+                          <div className="text-zinc-400 text-sm">
+                            Input a loose goal: &quot;Check the
+                            checkout...&quot;
+                          </div>
+                        </div>
+                      </li>
+                      <li className="flex flex-col items-center space-y-2">
+                        <div>
+                          <div className="text-zinc-100 font-medium mb-1">
+                            2. Get Test Brief
+                          </div>
+                          <div className="text-zinc-400 text-sm">
+                            Agent generates a strategy
+                          </div>
+                        </div>
+                      </li>
+                      <li className="flex flex-col items-center space-y-2">
+                        <div>
+                          <div className="text-zinc-100 font-medium mb-1">
+                            3. Approve
+                          </div>
+                          <div className="text-zinc-400 text-sm">
+                            You accept the plan
+                          </div>
+                        </div>
+                      </li>
+                      <li className="flex flex-col items-center space-y-2">
+                        <div>
+                          <div className="text-zinc-100 font-medium mb-1">
+                            4. Execution
+                          </div>
+                          <div className="text-zinc-400 text-sm">
+                            Agent delivers the full Test Protocol
+                          </div>
+                        </div>
+                      </li>
+                    </ul>
+                  </div>
+                </div>
+              </div>
+
+              {/* Demo Tasks - Bottom */}
+              <div className="flex-none max-w-md mx-auto w-full">
+                <DemoTasks onTaskClick={handleTaskClick} />
+              </div>
+            </div>
+          ) : (
+            messages.map((msg, idx) => (
+              <ChatBubble
+                key={msg.id || idx}
+                message={msg}
+                messageIndex={idx}
+              />
+            ))
+          )}
         </div>
       </main>
 

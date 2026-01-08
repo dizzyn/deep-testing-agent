@@ -33,26 +33,6 @@ const DEMO_TASKS: DemoTask[] = [
     description:
       "Log in to OrangeHRM, go to PIM, add an employee with a middle name, and confirm the record saves successfully.",
   },
-  {
-    title: "Google Flights",
-    description:
-      "On Google Flights, search for a trip to Paris, apply the 'Bags' filter for a carry-on, and verify that prices update immediately.",
-  },
-  {
-    title: "Wikipedia PDF",
-    description:
-      'On Wikipedia, search for "Quantum Mechanics," select "Download as PDF," and check the generated file for layout errors.',
-  },
-  {
-    title: "Airbnb Map",
-    description:
-      "On Airbnb, search for Austin, TX, adjust the price slider to under $100, and verify the map pins refresh accordingly.",
-  },
-  {
-    title: "GitHub Repository",
-    description:
-      "Navigate to a popular GitHub repository, check the issues tab, create a new issue, and verify it appears in the list.",
-  },
 ];
 
 interface DemoTasksProps {
@@ -74,25 +54,25 @@ export function DemoTasks({ onTaskClick }: DemoTasksProps) {
   const currentTask = DEMO_TASKS[currentTaskIndex];
 
   return (
-    <div className="border border-gray-300 rounded-lg p-4">
+    <div className="">
       <div className="flex items-center justify-between mb-3">
-        <h3 className="text-gray-900 font-medium">Try a Demo Task</h3>
+        <h3 className="text-zinc-100 font-medium">Try a Demo Task</h3>
         <button
           onClick={shuffleTask}
-          className="bg-gray-100 hover:bg-gray-200 text-gray-700 px-3 py-1 rounded text-sm transition-colors"
+          className="bg-zinc-800 hover:bg-zinc-700 text-zinc-300 px-3 py-1 rounded text-sm transition-colors"
         >
-          Refresh
+          Rotate
         </button>
       </div>
 
       <button
         onClick={() => onTaskClick(currentTask)}
-        className="w-full text-left border border-gray-200 hover:border-gray-300 rounded-lg p-3 transition-colors group hover:bg-gray-50"
+        className="w-full text-left border border-zinc-700 hover:border-zinc-600 rounded-lg p-3 transition-colors group hover:bg-zinc-800"
       >
-        <div className="font-medium text-gray-900 mb-1 group-hover:text-blue-600">
+        <div className="font-medium text-zinc-100 mb-1 group-hover:text-blue-400">
           {currentTask.title}
         </div>
-        <div className="text-gray-600 text-sm">{currentTask.description}</div>
+        <div className="text-zinc-400 text-sm">{currentTask.description}</div>
       </button>
     </div>
   );

@@ -1,7 +1,6 @@
 "use client";
 
 import { ToolCall } from "./tool-call";
-import React from "react";
 
 // --- Icons ---
 const UserIcon = () => (
@@ -135,8 +134,15 @@ export function ChatBubble({ message, messageIndex }: ChatBubbleProps) {
                 </div>
               );
 
-            case "tool-updateTestBrief":
-            case "tool-updateTestProtocol":
+            // case "tool-getTestBrief":
+            // case "tool-getTestProtocol":
+            //   return null;
+
+            case "step-start":
+              return null;
+
+            // case "tool-updateTestBrief":
+            // case "tool-updateTestProtocol":
             case "dynamic-tool":
               // Handle tool types
               if (
@@ -153,9 +159,6 @@ export function ChatBubble({ message, messageIndex }: ChatBubbleProps) {
                   </div>
                 );
               }
-              return null;
-
-            case "step-start":
               return null;
 
             default:

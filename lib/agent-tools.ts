@@ -3,27 +3,36 @@ import { readFile, writeFile } from "fs/promises";
 import { join } from "path";
 import { z } from "zod";
 
+const SESSION_META_PATH = join("public/session", "session_meta.json");
+
+/**
+ * Reads session metadata from file
+ */
+async function getSessionMeta(): Promise<Record<string, unknown>> {
+  try {
+    const content = await readFile(SESSION_META_PATH, "utf8");
+    return JSON.parse(content);
+  } catch {
+    return {};
+  }
+}
+
 /**
  * Updates session metadata with the provided key-value pairs
  */
 async function updateSessionMeta(updates: Record<string, unknown>) {
-  const filePath = join("public/session", "session_meta.json");
-
   try {
-    let currentMeta = {};
-    try {
-      const content = await readFile(filePath, "utf8");
-      currentMeta = JSON.parse(content);
-    } catch {
-      // File doesn't exist yet, start with empty meta
-    }
-
+    const currentMeta = await getSessionMeta();
     const newMeta = {
       ...currentMeta,
       ...updates,
       lastUpdated: new Date().toISOString(),
     };
-    await writeFile(filePath, JSON.stringify(newMeta, null, 2), "utf8");
+    await writeFile(
+      SESSION_META_PATH,
+      JSON.stringify(newMeta, null, 2),
+      "utf8"
+    );
 
     return {
       success: true,
@@ -35,6 +44,24 @@ async function updateSessionMeta(updates: Record<string, unknown>) {
       success: false,
       message: `Failed to update session metadata: ${updateError}`,
       meta: null,
+    };
+  }
+}
+
+/**
+ * Generic function to get specific content from session metadata
+ */
+async function getContent(key: string, defaultValue = "") {
+  try {
+    const meta = await getSessionMeta();
+    return {
+      success: true,
+      content: (meta[key] as string) || defaultValue,
+    };
+  } catch {
+    return {
+      success: false,
+      content: defaultValue,
     };
   }
 }
@@ -67,36 +94,41 @@ export const agentTools = {
     },
   }),
 
-  // updateSessionMeta: tool({
-  //   description: "Update session metadata with key-value pairs",
-  //   inputSchema: z.object({
-  //     updates: z
-  //       .record(z.string(), z.unknown())
-  //       .describe("Metadata updates to apply"),
-  //   }),
-  //   execute: async ({ updates }) => {
-  //     return await updateSessionMeta(updates);
-  //   },
-  // }),
-
-  getSessionMeta: tool({
-    description: "Get current session metadata including test brief",
+  getTestBrief: tool({
+    description: "Get the current test brief markdown content",
     inputSchema: z.object({}),
     execute: async () => {
-      const filePath = join("public/session", "session_meta.json");
-
-      try {
-        const content = await readFile(filePath, "utf8");
-        return {
-          success: true,
-          meta: JSON.parse(content),
-        };
-      } catch {
-        return {
-          success: true,
-          meta: {},
-        };
-      }
+      return await getContent("testBrief");
     },
   }),
+
+  getTestProtocol: tool({
+    description: "Get the current test protocol markdown content",
+    inputSchema: z.object({}),
+    execute: async () => {
+      return await getContent("testProtocol");
+    },
+  }),
+
+  // getSessionMeta: tool({
+  //   description:
+  //     "Get current session metadata including test brief and test protocol",
+  //   inputSchema: z.object({}),
+  //   execute: async () => {
+  //     const filePath = join("public/session", "session_meta.json");
+
+  //     try {
+  //       const content = await readFile(filePath, "utf8");
+  //       return {
+  //         success: true,
+  //         meta: JSON.parse(content),
+  //       };
+  //     } catch {
+  //       return {
+  //         success: true,
+  //         meta: {},
+  //       };
+  //     }
+  //   },
+  // }),
 };

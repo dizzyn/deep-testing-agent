@@ -256,7 +256,7 @@ export function TestRun({ selectedModel }: TestRunProps) {
 
             {/* Reset button - always available when there are messages */}
             {messages.length > 0 && (
-              <div className="flex items-center gap-2">
+              <div className="flex items-center">
                 {isResetting ? (
                   <>...resetting</>
                 ) : showResetConfirmation ? (

@@ -68,10 +68,12 @@ export function createExplorerAgent(modelId: string) {
 
   const model = createModelInstance(modelId);
 
+  const { getTestBrief, updateTestBrief } = agentTools;
+
   return new ToolLoopAgent({
     model,
     instructions,
-    tools: { ...chromeTools, ...agentTools },
+    tools: { ...chromeTools, getTestBrief, updateTestBrief },
   });
 }
 

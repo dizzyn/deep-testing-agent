@@ -1,7 +1,8 @@
 import { tool } from "ai";
-import { readFile, writeFile } from "fs/promises";
+import { readFile, writeFile, readdir } from "fs/promises";
 import { join } from "path";
 import { z } from "zod";
+import sharp from "sharp";
 
 const SESSION_META_PATH = join("public/session", "session_meta.json");
 
@@ -66,13 +67,16 @@ async function getContent(key: string, defaultValue = "") {
   }
 }
 
+const warning = "(User sees the full content, don't repeat in chat)";
+
 /**
  * Custom tools for the Chrome testing agent
  */
 export const agentTools = {
-  updateTestBrief: tool({
+  setTestBrief: tool({
     description:
-      "Create/Update the test brief markdown content in session metadata",
+      "Create/Update the test brief markdown content in session metadata." +
+      warning,
     inputSchema: z.object({
       content: z.string().describe("The complete test brief markdown content"),
     }),
@@ -81,9 +85,10 @@ export const agentTools = {
     },
   }),
 
-  updateTestProtocol: tool({
+  setTestTestProtocol: tool({
     description:
-      "Create/Update the test protocol markdown content in session metadata",
+      "Create/Update the test protocol markdown content in session metadata." +
+      warning,
     inputSchema: z.object({
       content: z
         .string()
@@ -95,7 +100,7 @@ export const agentTools = {
   }),
 
   getTestBrief: tool({
-    description: "Get the current test brief markdown content",
+    description: "Get the current test brief markdown content. " + warning,
     inputSchema: z.object({}),
     execute: async () => {
       return await getContent("testBrief");
@@ -103,10 +108,113 @@ export const agentTools = {
   }),
 
   getTestProtocol: tool({
-    description: "Get the current test protocol markdown content",
+    description: "Get the current test protocol markdown content" + warning,
     inputSchema: z.object({}),
     execute: async () => {
       return await getContent("testProtocol");
+    },
+  }),
+
+  listScreenshots: tool({
+    description:
+      "List all available screenshots in the session directory. " + warning,
+    inputSchema: z.object({}),
+    execute: async () => {
+      try {
+        const sessionDir = join("public/session");
+        const files = await readdir(sessionDir);
+        const screenshots = files.filter(
+          (file) =>
+            file.toLowerCase().endsWith(".png") ||
+            file.toLowerCase().endsWith(".jpg") ||
+            file.toLowerCase().endsWith(".jpeg") ||
+            file.toLowerCase().endsWith(".webp")
+        );
+
+        return {
+          success: true,
+          screenshots: screenshots.map((filename) => ({
+            filename,
+            path: `/session/${filename}`,
+            fullPath: join(sessionDir, filename),
+          })),
+          count: screenshots.length,
+        };
+      } catch (error) {
+        return {
+          success: false,
+          message: `Failed to list screenshots: ${error}`,
+          screenshots: [],
+          count: 0,
+        };
+      }
+    },
+  }),
+
+  readScreenshot: tool({
+    description:
+      "Read and analyze screenshot content. Returns compressed base64 encoded image data that the AI can process. " +
+      warning,
+    inputSchema: z.object({
+      filename: z
+        .string()
+        .describe("The screenshot filename (e.g., 'todomvc_test.png')"),
+      maxWidth: z
+        .number()
+        .optional()
+        .describe("Maximum width in pixels (default: 800)"),
+      quality: z
+        .number()
+        .min(1)
+        .max(100)
+        .optional()
+        .describe("JPEG quality 1-100 (default: 70)"),
+    }),
+    execute: async ({ filename, maxWidth = 800, quality = 70 }) => {
+      try {
+        const sessionDir = join("public/session");
+        const filePath = join(sessionDir, filename);
+
+        const originalBuffer = await readFile(filePath);
+
+        // Compress and resize the image
+        const compressedBuffer = await sharp(originalBuffer)
+          .resize({ width: maxWidth, withoutEnlargement: true })
+          .jpeg({ quality, mozjpeg: true })
+          .toBuffer();
+
+        const base64Data = compressedBuffer.toString("base64");
+        const mimeType = "image/jpeg"; // Always JPEG after compression
+
+        const compressionRatio = Math.round(
+          (1 - compressedBuffer.length / originalBuffer.length) * 100
+        );
+
+        return {
+          success: true,
+          filename,
+          mimeType,
+          base64Data,
+          dataUrl: `data:${mimeType};base64,${base64Data}`,
+          originalSize: originalBuffer.length,
+          compressedSize: compressedBuffer.length,
+          compressionRatio,
+          maxWidth,
+          quality,
+          message: `Screenshot '${filename}' compressed: ${Math.round(
+            originalBuffer.length / 1024
+          )}KB → ${Math.round(
+            compressedBuffer.length / 1024
+          )}KB (${compressionRatio}% reduction)`,
+        };
+      } catch (error) {
+        return {
+          success: false,
+          message: `Failed to read screenshot '${filename}': ${error}`,
+          filename,
+          base64Data: null,
+        };
+      }
     },
   }),
 

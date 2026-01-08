@@ -74,10 +74,7 @@ export function ToolCall({ part, messageIndex, partIndex }: ToolCallProps) {
   }
 
   // Handle test brief updates - check by type since toolName might not be set
-  if (
-    part.toolName === "updateTestBrief" ||
-    part.type === "tool-updateTestBrief"
-  ) {
+  if (part.toolName === "setTestBrief" || part.type === "tool-setTestBrief") {
     const input = part.input as { content?: string };
     const testBrief = input?.content || "";
 
@@ -90,8 +87,8 @@ export function ToolCall({ part, messageIndex, partIndex }: ToolCallProps) {
 
   // Handle test protocol updates
   if (
-    part.toolName === "updateTestProtocol" ||
-    part.type === "tool-updateTestProtocol"
+    part.toolName === "setTestTestProtocol" ||
+    part.type === "tool-setTestTestProtocol"
   ) {
     const input = part.input as { content?: string };
     const testProtocol = input?.content || "";

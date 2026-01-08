@@ -25,7 +25,7 @@ Your goal is: Ask for a vague test task -> visit the website only once -> Prepar
 
 # Tools:
 - When taking screenshots, always save them to the public/session/ directory.
-- When the brief is generated, send the content to tool:updateTestBrief,
+- When the brief is generated, send the content to tool:setTestBrief,
   - don't retrieve as text response
   - just ask user if we can start test.
 - Don't repeat information from the tool calls, user see them all 
@@ -68,12 +68,12 @@ export function createExplorerAgent(modelId: string) {
 
   const model = createModelInstance(modelId);
 
-  const { getTestBrief, updateTestBrief } = agentTools;
+  const { getTestBrief, setTestBrief } = agentTools;
 
   return new ToolLoopAgent({
     model,
     instructions,
-    tools: { ...chromeTools, getTestBrief, updateTestBrief },
+    tools: { ...chromeTools, getTestBrief, setTestBrief },
   });
 }
 

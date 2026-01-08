@@ -54,6 +54,19 @@ export const agentTools = {
     },
   }),
 
+  updateTestProtocol: tool({
+    description:
+      "Create/Update the test protocol markdown content in session metadata",
+    inputSchema: z.object({
+      content: z
+        .string()
+        .describe("The complete test protocol markdown content"),
+    }),
+    execute: async ({ content }) => {
+      return await updateSessionMeta({ testProtocol: content });
+    },
+  }),
+
   // updateSessionMeta: tool({
   //   description: "Update session metadata with key-value pairs",
   //   inputSchema: z.object({

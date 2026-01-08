@@ -9,8 +9,6 @@ import {
   loadConversationHistory,
   clearConversation,
 } from "@/lib/conversation-client";
-import { updateSessionData } from "@/lib/session";
-import { MODELS } from "@/lib/models";
 
 const conversationType = "testing" satisfies ConversationType;
 
@@ -28,7 +26,6 @@ export function TestRun({ selectedModel }: TestRunProps) {
 
   const [showScrollButton, setShowScrollButton] = useState(false);
   const [hasLoadedHistory, setHasLoadedHistory] = useState(false);
-  const [isPaused, setIsPaused] = useState(false);
   const [showResetConfirmation, setShowResetConfirmation] = useState(false);
   const [isResetting, setIsResetting] = useState(false);
 
@@ -38,23 +35,6 @@ export function TestRun({ selectedModel }: TestRunProps) {
     sendMessage(
       {
         text: `Read brief, start testing!`,
-      },
-      {
-        body: { model: selectedModel, conversationType },
-      }
-    );
-  }
-
-  function handlePause() {
-    stop();
-    setIsPaused(true);
-  }
-
-  function handleResume() {
-    setIsPaused(false);
-    sendMessage(
-      {
-        text: "Resume the testing",
       },
       {
         body: { model: selectedModel, conversationType },
@@ -74,7 +54,6 @@ export function TestRun({ selectedModel }: TestRunProps) {
     try {
       await clearConversation(conversationType);
       setMessages([]);
-      setIsPaused(false);
     } catch (error) {
       console.error("Failed to reset conversation:", error);
       alert("Failed to reset conversation. Please try again.");

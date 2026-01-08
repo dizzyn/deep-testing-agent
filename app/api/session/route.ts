@@ -13,6 +13,7 @@ export interface SessionData {
   chatHistory: unknown[];
   testHistory: unknown[];
   testBrief?: string;
+  testProtocol?: string;
   files: string[];
 }
 

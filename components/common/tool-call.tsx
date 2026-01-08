@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Image from "next/image";
 import { TestBriefView } from "../test-brief-view";
+import { TestProtocolView } from "../test-protocol-view";
 
 interface ToolCallProps {
   part: {
@@ -24,6 +25,7 @@ export function ToolCall({ part, messageIndex, partIndex }: ToolCallProps) {
     if (!toolName) return "Unknown Tool";
 
     const toolNames: Record<string, string> = {
+      // Legacy tool names
       take_screenshot: "Screenshot",
       navigate_page: "Navigate",
       updateTestBrief: "Test Brief",
@@ -32,6 +34,37 @@ export function ToolCall({ part, messageIndex, partIndex }: ToolCallProps) {
       fill: "Fill Form",
       wait_for: "Wait For Element",
       getSessionMeta: "Session Info",
+
+      // Chrome DevTools MCP tools
+      mcp_chrome_devtools_take_screenshot: "Screenshot",
+      mcp_chrome_devtools_navigate_page: "Navigate",
+      mcp_chrome_devtools_take_snapshot: "Page Snapshot",
+      mcp_chrome_devtools_click: "Click Element",
+      mcp_chrome_devtools_fill: "Fill Form",
+      mcp_chrome_devtools_fill_form: "Fill Form",
+      mcp_chrome_devtools_wait_for: "Wait For Element",
+      mcp_chrome_devtools_hover: "Hover Element",
+      mcp_chrome_devtools_press_key: "Press Key",
+      mcp_chrome_devtools_drag: "Drag Element",
+      mcp_chrome_devtools_upload_file: "Upload File",
+      mcp_chrome_devtools_evaluate_script: "Run Script",
+      mcp_chrome_devtools_list_pages: "List Pages",
+      mcp_chrome_devtools_new_page: "New Page",
+      mcp_chrome_devtools_select_page: "Select Page",
+      mcp_chrome_devtools_close_page: "Close Page",
+      mcp_chrome_devtools_resize_page: "Resize Page",
+      mcp_chrome_devtools_emulate: "Emulate Device",
+      mcp_chrome_devtools_handle_dialog: "Handle Dialog",
+      mcp_chrome_devtools_list_network_requests: "Network Requests",
+      mcp_chrome_devtools_get_network_request: "Get Network Request",
+      mcp_chrome_devtools_list_console_messages: "Console Messages",
+      mcp_chrome_devtools_get_console_message: "Get Console Message",
+      mcp_chrome_devtools_performance_start_trace: "Start Performance Trace",
+      mcp_chrome_devtools_performance_stop_trace: "Stop Performance Trace",
+      mcp_chrome_devtools_performance_analyze_insight: "Analyze Performance",
+
+      // Agent tools
+      updateTestProtocol: "Test Protocol",
     };
 
     return (
@@ -42,6 +75,7 @@ export function ToolCall({ part, messageIndex, partIndex }: ToolCallProps) {
 
   const getToolIcon = (toolName?: string): string => {
     const icons: Record<string, string> = {
+      // Legacy tool names
       take_screenshot: "📸",
       navigate_page: "🌐",
       updateTestBrief: "📋",
@@ -50,6 +84,37 @@ export function ToolCall({ part, messageIndex, partIndex }: ToolCallProps) {
       fill: "✏️",
       wait_for: "⏳",
       getSessionMeta: "ℹ️",
+
+      // Chrome DevTools MCP tools
+      mcp_chrome_devtools_take_screenshot: "📸",
+      mcp_chrome_devtools_navigate_page: "🌐",
+      mcp_chrome_devtools_take_snapshot: "📄",
+      mcp_chrome_devtools_click: "👆",
+      mcp_chrome_devtools_fill: "✏️",
+      mcp_chrome_devtools_fill_form: "📝",
+      mcp_chrome_devtools_wait_for: "⏳",
+      mcp_chrome_devtools_hover: "👋",
+      mcp_chrome_devtools_press_key: "⌨️",
+      mcp_chrome_devtools_drag: "🫳",
+      mcp_chrome_devtools_upload_file: "📤",
+      mcp_chrome_devtools_evaluate_script: "⚡",
+      mcp_chrome_devtools_list_pages: "📑",
+      mcp_chrome_devtools_new_page: "🆕",
+      mcp_chrome_devtools_select_page: "👁️",
+      mcp_chrome_devtools_close_page: "❌",
+      mcp_chrome_devtools_resize_page: "📐",
+      mcp_chrome_devtools_emulate: "📱",
+      mcp_chrome_devtools_handle_dialog: "💬",
+      mcp_chrome_devtools_list_network_requests: "🌐",
+      mcp_chrome_devtools_get_network_request: "📡",
+      mcp_chrome_devtools_list_console_messages: "🖥️",
+      mcp_chrome_devtools_get_console_message: "💻",
+      mcp_chrome_devtools_performance_start_trace: "🚀",
+      mcp_chrome_devtools_performance_stop_trace: "🛑",
+      mcp_chrome_devtools_performance_analyze_insight: "📊",
+
+      // Agent tools
+      updateTestProtocol: "📋",
     };
 
     return icons[toolName || ""] || "🔧";
@@ -87,7 +152,8 @@ export function ToolCall({ part, messageIndex, partIndex }: ToolCallProps) {
 
   // Handle screenshot display
   if (
-    part.toolName === "take_screenshot" &&
+    (part.toolName === "take_screenshot" ||
+      part.toolName === "mcp_chrome_devtools_take_screenshot") &&
     part.state === "output-available"
   ) {
     const output = part.output as { content?: Array<{ text?: string }> };
@@ -128,6 +194,21 @@ export function ToolCall({ part, messageIndex, partIndex }: ToolCallProps) {
     return (
       <div key={`${messageIndex}-${partIndex}`} className="mb-4">
         <TestBriefView testBrief={testBrief} />
+      </div>
+    );
+  }
+
+  // Handle test protocol updates
+  if (
+    part.toolName === "updateTestProtocol" ||
+    part.type === "tool-updateTestProtocol"
+  ) {
+    const input = part.input as { content?: string };
+    const testProtocol = input?.content || "";
+
+    return (
+      <div key={`${messageIndex}-${partIndex}`} className="mb-4">
+        <TestProtocolView testProtocol={testProtocol} />
       </div>
     );
   }

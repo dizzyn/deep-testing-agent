@@ -1,4 +1,4 @@
-import { InferAgentUIMessage, ToolLoopAgent } from "ai";
+import { InferAgentUIMessage, stepCountIs, ToolLoopAgent } from "ai";
 import { createModelInstance } from "../lib/model-factory";
 import { getChromeTools } from "../lib/mcp-client";
 import { agentTools } from "../lib/agent-tools";
@@ -20,12 +20,12 @@ You are a web testing agent with Chrome DevTools.
 3. Evaluate the result
 4. Update the protocol walkthrough and acceptance criteria, feel free to change test plan any time if needed
 
-
 # The expected result
+
 1. If PASSED/FAILED - testing has been finished 
     a. Show or explain some proof to user as result, preferable screenshot
     b. Write a *test protocol document* that contains:
-      - the status
+      - the status PASSED/FAILED/IN_PROGRESS
       - the real walk thought
       - acceptance criteria based on the brief
       - potential differences from the brief
@@ -48,11 +48,10 @@ Important:
 <report example>
 # 📋 Test Protocol: Add Highest Priced Item
 
-**PASSED/FAILED/IN PROGRESS** - Successfully added the highest Priced Item to Cart
+Statius: **PASSED** - Successfully added the highest Priced Item to Cart
 
 ## 👣 Execution Steps
 1. Step 1 - result of the step
-2. Step 2 - result of the step
 
 ## Acceptance Criteria (The Contract)
 [x] **Name** the test from the brief
@@ -72,12 +71,24 @@ export function createTesterAgent(modelId: string) {
 
   return new ToolLoopAgent({
     model,
+    temperature: 0.2,
     instructions,
+    prepareCall: (settings) => {
+      return {
+        ...settings,
+        stopWhen: stepCountIs(50),
+      };
+    },
     tools: {
       ...chromeTools,
       getTestBrief,
       getTestProtocol,
       setTestTestProtocol,
+    },
+    experimental_telemetry: {
+      isEnabled: true,
+      recordInputs: true,
+      recordOutputs: true,
     },
   });
 }

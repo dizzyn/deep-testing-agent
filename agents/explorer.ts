@@ -72,8 +72,14 @@ export function createExplorerAgent(modelId: string) {
 
   return new ToolLoopAgent({
     model,
+    temperature: 0.2,
     instructions,
     tools: { ...chromeTools, getTestBrief, setTestBrief },
+    experimental_telemetry: {
+      isEnabled: true,
+      recordInputs: true,
+      recordOutputs: true,
+    },
   });
 }
 

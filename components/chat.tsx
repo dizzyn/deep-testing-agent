@@ -3,6 +3,7 @@
 import { useChat } from "@ai-sdk/react";
 import type { ExplorerAgentUIMessage } from "@/agents/explorer";
 import { ChatBubble } from "./common/chat-bubble";
+import { MessageSizeCounter } from "./common/message-size-counter";
 import { DemoTasks } from "./demo-tasks";
 import { useState, useRef, useEffect, useCallback } from "react";
 import type { ConversationType } from "@/lib/conversation";
@@ -134,6 +135,7 @@ export function Chat({ selectedModel }: ChatProps) {
         onScroll={handleScroll}
         className="flex-1 overflow-y-auto p-4 custom-scrollbar scroll-smooth relative"
       >
+        <MessageSizeCounter messages={messages} position="top-left" />
         <div className="max-w-3xl mx-auto space-y-8 pb-4">
           {messages.length === 0 && hasLoadedHistory ? (
             <div className="flex flex-col min-h-[calc(100vh-200px)] py-8">

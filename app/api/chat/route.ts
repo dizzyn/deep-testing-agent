@@ -1,13 +1,27 @@
 import { NextRequest, NextResponse } from "next/server";
 import {
-  loadConversation,
   clearConversation,
+  loadConversation,
   type ConversationType,
 } from "@/lib/conversation";
-import { createAgentUIStreamResponse } from "ai";
+import { createAgentUIStreamResponse, type UIMessage } from "ai";
 import { createExplorerAgent } from "@/agents/explorer";
 import { createTesterAgent } from "@/agents/tester";
 import { saveMessage } from "@/lib/conversation";
+import { cleanMessages } from "@/lib/agent-tools";
+
+interface MessagePart {
+  type: string;
+  [key: string]: unknown;
+}
+
+interface Message {
+  id: string;
+  role: string;
+  content: string;
+  parts: MessagePart[];
+  createdAt: string;
+}
 
 export async function GET(request: NextRequest) {
   const conversationType =
@@ -32,25 +46,16 @@ export async function GET(request: NextRequest) {
 export async function POST(request: Request) {
   const body = await request.json();
 
-  console.log(body);
-
   const { messages, model, conversationType } = body;
 
   if (!model) throw "Empty model parameter";
   if (!conversationType) throw "Empty conversationType";
 
-  // Filter out messages with empty parts to prevent validation errors
-  const validMessages = messages.filter(
-    /* eslint-disable @typescript-eslint/no-explicit-any */
-    (msg: any) => msg.parts && Array.isArray(msg.parts) && msg.parts.length > 0
+  // Clean up messages to save tokens - replace old tool outputs with "removed"
+  const validMessages = cleanMessages(messages).filter(
+    (msg: Message) =>
+      msg.parts && Array.isArray(msg.parts) && msg.parts.length > 0
   );
-
-  // Create agent with the selected model
-  console.log("conversationType", conversationType);
-  const agent =
-    conversationType == "testing"
-      ? createTesterAgent(model)
-      : createExplorerAgent(model);
 
   // Persist the latest user message
   const lastUserMessage = validMessages[validMessages.length - 1];
@@ -64,28 +69,61 @@ export async function POST(request: Request) {
     });
   }
 
-  return createAgentUIStreamResponse({
-    agent,
-    uiMessages: validMessages,
-    onFinish: async ({ messages: finalMessages }) => {
-      // Find and save the assistant's response
-      const lastAssistantMessage = finalMessages[finalMessages.length - 1];
-      if (
-        lastAssistantMessage &&
-        lastAssistantMessage.role === "assistant" &&
-        lastAssistantMessage.parts &&
-        lastAssistantMessage.parts.length > 0
-      ) {
-        await saveMessage(conversationType, {
-          id: lastAssistantMessage.id || crypto.randomUUID(),
-          role: "assistant",
-          content: JSON.stringify(lastAssistantMessage.parts || []),
-          parts: lastAssistantMessage.parts,
-          createdAt: new Date().toISOString(),
-        });
-      }
-    },
-  });
+  const onFinish = async ({
+    messages,
+    responseMessage,
+    usage,
+  }: {
+    messages: UIMessage[];
+    isContinuation: boolean;
+    isAborted: boolean;
+    responseMessage: UIMessage;
+    usage?: {
+      promptTokens: number;
+      completionTokens: number;
+      totalTokens: number;
+    };
+  }) => {
+    console.log("Token usage:", usage);
+    // console.log("Response message:", responseMessage);
+
+    // Find and save the assistant's response
+    const lastAssistantMessage = messages[messages.length - 1];
+
+    if (
+      lastAssistantMessage &&
+      lastAssistantMessage.role === "assistant" &&
+      lastAssistantMessage.parts &&
+      lastAssistantMessage.parts.length > 0
+    ) {
+      await saveMessage(conversationType, {
+        id: lastAssistantMessage.id || crypto.randomUUID(),
+        role: "assistant",
+        content: JSON.stringify(lastAssistantMessage.parts || []),
+        parts: lastAssistantMessage.parts,
+        createdAt: new Date().toISOString(),
+      });
+    }
+  };
+
+  // Create agent with the selected model and return appropriate response
+  console.log("conversationType", conversationType);
+
+  if (conversationType === "testing") {
+    const agent = createTesterAgent(model);
+    return createAgentUIStreamResponse({
+      agent,
+      uiMessages: validMessages,
+      onFinish,
+    });
+  } else {
+    const agent = createExplorerAgent(model);
+    return createAgentUIStreamResponse({
+      agent,
+      uiMessages: validMessages,
+      onFinish,
+    });
+  }
 }
 
 export async function DELETE(request: NextRequest) {

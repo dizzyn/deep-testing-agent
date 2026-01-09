@@ -12,24 +12,35 @@ export const MODELS: ModelConfig[] = [
     name: "Devstral",
     provider: "mistral",
     available: true,
+    price: 0,
   },
   {
     id: "mistral/devstral-small-latest",
     name: "Devstral Small",
     provider: "mistral",
     available: true,
+    price: 0,
   },
   {
-    id: "google/gemini-2.0-flash-exp:free",
+    id: "google/gemini-2.0-flash-001",
     name: "Gemini 2.0 Flash Experimental",
     provider: "openrouter",
     available: true,
+    price: 0,
   },
   {
-    id: "nex-agi/deepseek-v3.1-nex-n1:free",
-    name: "DeepSeek v3.1 Nex N1",
+    id: "deepseek/deepseek-chat-v3.1",
+    name: "DeepSeek v3.1",
     provider: "openrouter",
     available: true,
+    price: 0,
+  },
+  {
+    id: "deepseek/deepseek-r1",
+    name: "DeepSeek R1",
+    provider: "openrouter",
+    available: true,
+    price: 0,
   },
 ];
 

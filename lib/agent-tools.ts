@@ -4,6 +4,99 @@ import { join } from "path";
 import { z } from "zod";
 import sharp from "sharp";
 
+interface MessagePart {
+  type: string;
+  [key: string]: unknown;
+}
+
+interface ToolCallPart extends MessagePart {
+  toolCallId: string;
+  state: string;
+  input: Record<string, unknown>;
+  output?: unknown;
+}
+
+interface Message {
+  id: string;
+  role: string;
+  content: string;
+  parts: MessagePart[];
+  createdAt: string;
+}
+
+/**
+ * Cleans up messages by replacing old tool call outputs with "removed" to save tokens
+ * Keeps only the last 2 tool calls with full output, replaces older ones with "removed"
+ */
+export function cleanMessages(messages: Message[]): Message[] {
+  // Find all tool calls across all messages to determine which are the most recent
+  const allToolCalls: {
+    messageIndex: number;
+    partIndex: number;
+    part: ToolCallPart;
+  }[] = [];
+
+  messages.forEach((msg, msgIndex) => {
+    if (!msg.parts || !Array.isArray(msg.parts)) return;
+
+    msg.parts.forEach((part, partIndex) => {
+      if (
+        part.type &&
+        (part.type.startsWith("tool-") || part.type === "dynamic-tool") &&
+        (part as ToolCallPart).output
+      ) {
+        allToolCalls.push({
+          messageIndex: msgIndex,
+          partIndex,
+          part: part as ToolCallPart,
+        });
+      }
+    });
+  });
+
+  // Keep only the last 2 tool calls with full output
+  const keepFullOutput = allToolCalls.slice(-2);
+
+  return messages.map((msg: Message, msgIndex: number) => {
+    if (!msg.parts || !Array.isArray(msg.parts)) return msg;
+
+    const cleanedParts = msg.parts.map(
+      (part: MessagePart, partIndex: number) => {
+        // If it's a tool call with output
+        if (
+          part.type &&
+          (part.type.startsWith("tool-") || part.type === "dynamic-tool") &&
+          (part as ToolCallPart).output
+        ) {
+          // Check if this tool call should keep full output
+          const shouldKeepFull = keepFullOutput.some(
+            (item) =>
+              item.messageIndex === msgIndex && item.partIndex === partIndex
+          );
+
+          if (shouldKeepFull) {
+            return part; // Keep as is
+          } else {
+            // Replace output with "removed" to save tokens
+            return {
+              ...part,
+              output: "removed",
+            } as ToolCallPart;
+          }
+        }
+
+        // Keep non-tool parts as is
+        return part;
+      }
+    );
+
+    return {
+      ...msg,
+      parts: cleanedParts,
+    };
+  });
+}
+
 const SESSION_META_PATH = join("public/session", "session_meta.json");
 
 /**

@@ -1,27 +1,27 @@
 import { createMistral } from "@ai-sdk/mistral";
 import { createOpenRouter } from "@openrouter/ai-sdk-provider";
+import { ModelId, ModelProvider, MODELS, type ModelConfig } from "./models";
 
-export type ModelProvider = "mistral" | "openrouter";
-
-export interface ModelConfig {
+export interface ModelFactoryConfig {
   provider: ModelProvider;
   modelId: string;
 }
 
-export function parseModelId(modelId: string): ModelConfig {
-  const [provider] = modelId.split("/");
-
-  switch (provider) {
-    case "mistral":
-      return { provider: "mistral", modelId: modelId.replace("mistral/", "") };
-    default:
-      // Everything else goes through OpenRouter
-      return { provider: "openrouter", modelId };
-  }
+export function findModelById(modelId: ModelId): ModelConfig | undefined {
+  return MODELS.find((model) => model.id === modelId);
 }
 
-export function createModelInstance(modelId: string) {
-  const config = parseModelId(modelId);
+export function createModelInstance(modelId: ModelId) {
+  const modelConfig = findModelById(modelId);
+
+  if (!modelConfig) {
+    throw new Error(`Model with id "${modelId}" not found`);
+  }
+
+  const config: ModelFactoryConfig = {
+    provider: modelConfig.provider as ModelProvider,
+    modelId: modelConfig.id,
+  };
 
   switch (config.provider) {
     case "mistral":

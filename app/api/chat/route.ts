@@ -71,7 +71,6 @@ export async function POST(request: Request) {
 
   const onFinish = async ({
     messages,
-    responseMessage,
     usage,
   }: {
     messages: UIMessage[];
@@ -85,7 +84,6 @@ export async function POST(request: Request) {
     };
   }) => {
     console.log("Token usage:", usage);
-    // console.log("Response message:", responseMessage);
 
     // Find and save the assistant's response
     const lastAssistantMessage = messages[messages.length - 1];

@@ -2,6 +2,7 @@ import { ToolLoopAgent, InferAgentUIMessage } from "ai";
 import { createModelInstance } from "../lib/model-factory";
 import { getChromeTools } from "../lib/mcp-client";
 import { agentTools } from "../lib/agent-tools";
+import { ModelId } from "@/lib/models";
 
 const instructions = `
 You are a web testing agent with Chrome DevTools.
@@ -66,7 +67,7 @@ const chromeTools = await getChromeTools("explorer");
 export function createExplorerAgent(modelId: string) {
   if (!modelId) throw "Missing model type";
 
-  const model = createModelInstance(modelId);
+  const model = createModelInstance(modelId as ModelId);
 
   const { getTestBrief, setTestBrief } = agentTools;
 

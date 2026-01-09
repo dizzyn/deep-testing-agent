@@ -8,6 +8,7 @@ import { DemoTasks } from "./demo-tasks";
 import { useState, useRef, useEffect, useCallback } from "react";
 import type { ConversationType } from "@/lib/conversation";
 import { loadConversationHistory } from "@/lib/conversation-client";
+import { DefaultChatTransport } from "ai";
 
 const conversationType = "default" satisfies ConversationType;
 
@@ -18,7 +19,11 @@ interface ChatProps {
 export function Chat({ selectedModel }: ChatProps) {
   // 1. Setup & State
   const { messages, sendMessage, setMessages, status } =
-    useChat<ExplorerAgentUIMessage>();
+    useChat<ExplorerAgentUIMessage>({
+      transport: new DefaultChatTransport({
+        api: "/api/thinker",
+      }),
+    });
 
   // Derive loading state from status
   const isGenerating = status === "submitted" || status === "streaming";

@@ -4,25 +4,24 @@ import { useChat } from "@ai-sdk/react";
 import type { ExplorerAgentUIMessage } from "@/agents/explorer";
 import { ChatBubble } from "./common/chat-bubble";
 import { MessageSizeCounter } from "./common/message-size-counter";
-import { DemoTasks } from "./demo-tasks";
 import { useState, useRef, useEffect, useCallback } from "react";
 import type { ConversationType } from "@/lib/conversation";
 import { loadConversationHistory } from "@/lib/conversation-client";
-import { DefaultChatTransport } from "ai";
 
 const conversationType = "default" satisfies ConversationType;
 
 interface ChatProps {
   selectedModel: string;
+  children?: React.ReactNode;
 }
 
-export function Chat({ selectedModel }: ChatProps) {
+export function Chat({ selectedModel, children }: ChatProps) {
   // 1. Setup & State
   const { messages, sendMessage, setMessages, status } =
     useChat<ExplorerAgentUIMessage>({
-      transport: new DefaultChatTransport({
-        api: "/api/thinker",
-      }),
+      // transport: new DefaultChatTransport({
+      //   // api: "/api/thinker",
+      // }),
     });
 
   // Derive loading state from status
@@ -120,10 +119,6 @@ export function Chat({ selectedModel }: ChatProps) {
     e.target.style.height = Math.min(e.target.scrollHeight, 200) + "px";
   };
 
-  const handleTaskClick = (task: { title: string; description: string }) => {
-    setInput(task.description);
-  };
-
   // Auto-resize textarea when input changes (including from demo tasks)
   useEffect(() => {
     if (textareaRef.current) {
@@ -134,101 +129,52 @@ export function Chat({ selectedModel }: ChatProps) {
   }, [input]);
 
   return (
-    <>
+    <div className="flex flex-col h-full relative">
+      {/* Fixed Header Bar */}
+      <header className="flex-none bg-zinc-950/95 backdrop-blur-sm border-b border-zinc-800 px-4 py-2 z-40 relative">
+        <div className="max-w-3xl mx-auto flex justify-between items-center">
+          <div className="text-sm text-zinc-400">Deep Testing Agent</div>
+          <MessageSizeCounter messages={messages} position="inline" />
+        </div>
+      </header>
+
       <main
         ref={scrollRef}
         onScroll={handleScroll}
         className="flex-1 overflow-y-auto p-4 custom-scrollbar scroll-smooth relative"
       >
-        <MessageSizeCounter messages={messages} position="top-left" />
         <div className="max-w-3xl mx-auto space-y-8 pb-4">
-          {messages.length === 0 && hasLoadedHistory ? (
-            <div className="flex flex-col min-h-[calc(100vh-200px)] py-8">
-              {/* Header Section - Top */}
-              <div className="flex-none text-center space-y-6 mb-12">
-                <h1 className="text-4xl font-bold text-zinc-100">
-                  Deep Testing Agent
-                </h1>
-                <p className="text-xl text-zinc-400 max-w-2xl mx-auto leading-relaxed">
-                  QA testing on autopilot. Just point me to a URL, and I’ll
-                  handle the rest.
-                </p>
-              </div>
-
-              {/* How it works - Middle */}
-              <div className="flex-1 flex flex-col justify-center">
-                <div className="text-center space-y-4 mb-16">
-                  <div className="max-w-2xl mx-auto">
-                    <ul className="space-y-4 text-center">
-                      <li className="flex flex-col items-center space-y-2">
-                        <div>
-                          <div className="text-zinc-100 font-medium mb-1">
-                            1. Input Goal
-                          </div>
-                          <div className="text-zinc-400 text-sm">
-                            Input a loose goal: &quot;Check the
-                            checkout...&quot;
-                          </div>
-                        </div>
-                      </li>
-                      <li className="flex flex-col items-center space-y-2">
-                        <div>
-                          <div className="text-zinc-100 font-medium mb-1">
-                            2. Get Test Brief
-                          </div>
-                          <div className="text-zinc-400 text-sm">
-                            Agent generates a strategy
-                          </div>
-                        </div>
-                      </li>
-                      <li className="flex flex-col items-center space-y-2">
-                        <div>
-                          <div className="text-zinc-100 font-medium mb-1">
-                            3. Approve
-                          </div>
-                          <div className="text-zinc-400 text-sm">
-                            You accept the plan
-                          </div>
-                        </div>
-                      </li>
-                      <li className="flex flex-col items-center space-y-2">
-                        <div>
-                          <div className="text-zinc-100 font-medium mb-1">
-                            4. Execution
-                          </div>
-                          <div className="text-zinc-400 text-sm">
-                            Agent delivers the full Test Protocol
-                          </div>
-                        </div>
-                      </li>
-                    </ul>
+          {messages.length === 0 && hasLoadedHistory
+            ? children || (
+                <div className="flex flex-col min-h-[calc(100vh-200px)] py-8">
+                  {/* Default empty state if no children provided */}
+                  <div className="flex-none text-center space-y-6 mb-12">
+                    <h1 className="text-4xl font-bold text-zinc-100">
+                      Deep Testing Agent
+                    </h1>
+                    <p className="text-xl text-zinc-400 max-w-2xl mx-auto leading-relaxed">
+                      QA testing on autopilot. Just point me to a URL, and
+                      I&apos;ll handle the rest.
+                    </p>
                   </div>
                 </div>
-              </div>
-
-              {/* Demo Tasks - Bottom */}
-              <div className="flex-none max-w-md mx-auto w-full">
-                <DemoTasks onTaskClick={handleTaskClick} />
-              </div>
-            </div>
-          ) : (
-            messages.map((msg, idx) => (
-              <ChatBubble
-                key={msg.id || idx}
-                message={msg}
-                messageIndex={idx}
-              />
-            ))
-          )}
+              )
+            : messages.map((msg, idx) => (
+                <ChatBubble
+                  key={msg.id || idx}
+                  message={msg}
+                  messageIndex={idx}
+                />
+              ))}
         </div>
       </main>
 
-      {/* Floating Scroll Button */}
-      {showScrollButton && (
-        <div className="absolute bottom-24 left-0 right-0 flex justify-center z-30 pointer-events-none">
+      <footer className="flex-none bg-zinc-950 border-t border-zinc-800 p-4 z-20 relative">
+        {/* Floating Scroll Button - Part of footer, positioned above */}
+        {showScrollButton && (
           <button
             onClick={() => scrollToBottom(true)}
-            className="pointer-events-auto bg-zinc-800 hover:bg-zinc-700 text-white p-2 rounded-full shadow-lg border border-zinc-700 transition-all animate-in fade-in slide-in-from-bottom-2"
+            className="absolute -top-14 right-6 bg-zinc-800 hover:bg-zinc-700 text-white p-3 rounded-full shadow-lg border border-zinc-700 transition-all animate-in fade-in slide-in-from-bottom-2 z-10"
             aria-label="Scroll to bottom"
           >
             <svg
@@ -245,10 +191,8 @@ export function Chat({ selectedModel }: ChatProps) {
               />
             </svg>
           </button>
-        </div>
-      )}
+        )}
 
-      <footer className="flex-none bg-zinc-950 border-t border-zinc-800 p-4 z-20">
         <div className="max-w-3xl mx-auto">
           <form onSubmit={handleSubmit} className="relative">
             <textarea
@@ -284,6 +228,6 @@ export function Chat({ selectedModel }: ChatProps) {
           </form>
         </div>
       </footer>
-    </>
+    </div>
   );
 }

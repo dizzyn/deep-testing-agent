@@ -62,7 +62,7 @@ _Agent Note: I will scan the default inventory list to find the highest price. I
 </test brief example>
 .`;
 
-const chromeTools = await getChromeTools("explorer");
+const chromeTools = await getChromeTools();
 
 export function createExplorerAgent(modelId: string) {
   if (!modelId) throw "Missing model type";

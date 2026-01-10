@@ -2,6 +2,7 @@ import { InferAgentUIMessage, stepCountIs, ToolLoopAgent } from "ai";
 import { createModelInstance } from "../lib/model-factory";
 import { getChromeTools } from "../lib/mcp-client";
 import { agentTools } from "../lib/agent-tools";
+import { ModelId } from "@/lib/models";
 
 const instructions = `
 You are a web testing agent with Chrome DevTools.
@@ -60,12 +61,12 @@ Note: (optional) any additional note if needed - eg. brief was not followed full
 </report example>
 `;
 
-const chromeTools = await getChromeTools("tester");
+const chromeTools = await getChromeTools();
 
 export function createTesterAgent(modelId: string) {
   if (!modelId) throw "Missing model type";
 
-  const model = createModelInstance(modelId);
+  const model = createModelInstance(modelId as ModelId);
 
   const { getTestBrief, getTestProtocol, setTestTestProtocol } = agentTools;
 

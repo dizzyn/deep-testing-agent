@@ -5,7 +5,7 @@ import type { ExplorerAgentUIMessage } from "@/agents/explorer";
 
 interface MessageSizeCounterProps {
   messages: ExplorerAgentUIMessage[];
-  position: "top-left" | "top-right";
+  position: "top-left" | "top-right" | "inline";
 }
 
 export function MessageSizeCounter({
@@ -29,6 +29,14 @@ export function MessageSizeCounter({
   }, [messages]);
 
   if (messages.length === 0) return null;
+
+  if (position === "inline") {
+    return (
+      <div className="text-xs text-zinc-500 font-mono">
+        {sizeInfo.count}:{sizeInfo.size}
+      </div>
+    );
+  }
 
   const positionClass =
     position === "top-left" ? "top-2 left-2" : "top-2 right-2";

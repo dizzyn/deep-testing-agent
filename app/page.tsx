@@ -9,6 +9,7 @@ import { MODELS } from "@/lib/models";
 import { useEffect, useState } from "react";
 import type { SessionData } from "./api/session/route";
 import { fetchSessionData } from "@/lib/session";
+import { TestRun } from "@/components/test-run";
 
 function AppContent() {
   const [sessionData, setSessionData] = useState<SessionData | null>(null);
@@ -72,11 +73,12 @@ function AppContent() {
         </div>
       </header>
 
-      {showSideBySide ? (
-        <SplitView selectedModel={selectedModel} />
-      ) : (
-        <Chat selectedModel={selectedModel} />
-      )}
+      <SplitView
+        left={<Chat selectedModel={selectedModel} />}
+        right={
+          showSideBySide ? <TestRun selectedModel={selectedModel} /> : null
+        }
+      />
     </>
   );
 }

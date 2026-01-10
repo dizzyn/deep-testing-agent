@@ -1,91 +1,45 @@
 import { createMCPClient, MCPClient } from "@ai-sdk/mcp";
 import { Experimental_StdioMCPTransport as StdioClientTransport } from "@ai-sdk/mcp/mcp-stdio";
 
-let explorerMCPClient: MCPClient | null = null;
-let testerMCPClient: MCPClient | null = null;
-let browserInitialized = false;
+// 1. Use a single variable to hold the shared instance
+let sharedMCPClient: MCPClient | null = null;
 
 /**
- * Creates and configures the MCP client for Chrome DevTools integration
+ * Internal function to initialize the connection once.
+ * We use a fixed profile path so both "logical" agents share the session.
  */
-export async function createChromeMCPClient(profileSuffix?: string) {
+async function initializeSharedClient() {
   const args = ["./chrome-devtools-mcp/build/src/index.js"];
 
-  // Add unique profile path if specified
-  if (profileSuffix) {
-    args.push("--user-data-dir", `/tmp/chrome-profile-${profileSuffix}`);
-  }
+  // Use a SINGLE shared directory for the session
+  args.push("--user-data-dir", "/tmp/chrome-profile-shared");
 
-  const mcpClient = await createMCPClient({
+  const client = await createMCPClient({
     transport: new StdioClientTransport({
       command: "node",
       args,
     }),
   });
 
-  return mcpClient;
+  return client;
 }
 
 /**
- * Gets or creates the MCP client for explorer agent
+ * Gets the singleton MCP client.
+ * If it doesn't exist, it creates it. If it does, it reuses it.
  */
-export async function getExplorerMCPClient() {
-  if (!explorerMCPClient) {
-    explorerMCPClient = await createChromeMCPClient("explorer");
+export async function getSharedMCPClient() {
+  if (!sharedMCPClient) {
+    sharedMCPClient = await initializeSharedClient();
   }
-  return explorerMCPClient;
+  return sharedMCPClient;
 }
 
 /**
- * Gets or creates the MCP client for tester agent
+ * Gets Chrome DevTools tools.
+ * Both agents now receive tools connected to the SAME browser instance.
  */
-export async function getTesterMCPClient() {
-  if (!testerMCPClient) {
-    testerMCPClient = await createChromeMCPClient("tester");
-  }
-  return testerMCPClient;
-}
-
-/**
- * Gets or creates the shared MCP client instance
- * @deprecated Use getExplorerMCPClient or getTesterMCPClient instead
- */
-export async function getSharedChromeMCPClient() {
-  return await getExplorerMCPClient();
-}
-
-/**
- * Gets Chrome DevTools tools from the MCP client for specific agent
- */
-export async function getChromeTools(
-  agentType: "explorer" | "tester" = "explorer"
-) {
-  const mcpClient =
-    agentType === "explorer"
-      ? await getExplorerMCPClient()
-      : await getTesterMCPClient();
+export async function getChromeTools() {
+  const mcpClient = await getSharedMCPClient();
   return await mcpClient.tools();
-}
-
-/**
- * Checks if browser session is already initialized
- */
-export function isBrowserInitialized(): boolean {
-  return browserInitialized;
-}
-
-/**
- * Marks browser as initialized (call after first agent creates pages)
- */
-export function setBrowserInitialized(): void {
-  browserInitialized = true;
-}
-
-/**
- * Resets browser state (for cleanup)
- */
-export function resetBrowserState(): void {
-  browserInitialized = false;
-  explorerMCPClient = null;
-  testerMCPClient = null;
 }

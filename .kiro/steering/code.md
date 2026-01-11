@@ -7,6 +7,7 @@ inclusion: always
 ## TypeScript Standards
 
 - **Use only strict TypeScript configuration without `any` types**
+- **Never use .js extensions for typescript files**
 - Prefer explicit type annotations for function parameters and return values
 - Use type unions and intersections over interfaces for function responses
 

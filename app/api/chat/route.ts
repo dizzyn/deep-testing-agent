@@ -2,37 +2,26 @@ import { NextRequest, NextResponse } from "next/server";
 import {
   clearConversation,
   loadConversation,
-  type ConversationType,
+  type ServiceType,
 } from "@/lib/conversation";
-import { createAgentUIStreamResponse, type UIMessage } from "ai";
+import {
+  convertToModelMessages,
+  createAgentUIStreamResponse,
+  safeValidateUIMessages,
+  validateUIMessages,
+  type UIMessage,
+} from "ai";
 import { createExplorerAgent } from "@/agents/explorer";
 import { createTesterAgent } from "@/agents/tester";
 import { saveMessage } from "@/lib/conversation";
-import { cleanMessages } from "@/lib/agent-tools";
-
-interface MessagePart {
-  type: string;
-  [key: string]: unknown;
-}
-
-interface Message {
-  id: string;
-  role: string;
-  content: string;
-  parts: MessagePart[];
-  createdAt: string;
-}
 
 export async function GET(request: NextRequest) {
-  const conversationType =
-    request?.nextUrl?.searchParams.get("conversationType");
+  const serviceType = request?.nextUrl?.searchParams.get("service");
 
-  if (!conversationType) throw "Empty conversationType";
+  if (!serviceType) throw "Empty ServiceType";
 
   try {
-    const messages = await loadConversation(
-      conversationType as ConversationType
-    );
+    const messages = await loadConversation(serviceType as ServiceType);
     return NextResponse.json(messages);
   } catch (error) {
     console.error("Error fetching conversation:", error);
@@ -46,26 +35,27 @@ export async function GET(request: NextRequest) {
 export async function POST(request: Request) {
   const body = await request.json();
 
-  const { messages, model, conversationType } = body;
+  const { messages, model, service } = body;
 
   if (!model) throw "Empty model parameter";
-  if (!conversationType) throw "Empty conversationType";
+  if (!service) throw "Empty ServiceType";
 
   // Clean up messages to save tokens - replace old tool outputs with "removed"
-  const validMessages = cleanMessages(messages).filter(
-    (msg: Message) =>
-      msg.parts && Array.isArray(msg.parts) && msg.parts.length > 0
-  );
+  // const validMessages = messages.filter(
+  //   (msg: UIMessage) =>
+  //     msg.parts && Array.isArray(msg.parts) && msg.parts.length > 0
+  // );
 
   // Persist the latest user message
-  const lastUserMessage = validMessages[validMessages.length - 1];
+  const lastUserMessage = messages[messages.length - 1];
   if (lastUserMessage && lastUserMessage.role === "user") {
-    await saveMessage(conversationType, {
+    await saveMessage(service, {
       id: lastUserMessage.id || crypto.randomUUID(),
       role: "user",
-      content: JSON.stringify(lastUserMessage.parts || []),
+
+      // content: JSON.stringify(lastUserMessage.parts || []),
       parts: lastUserMessage.parts,
-      createdAt: new Date().toISOString(),
+      // createdAt: new Date().toISOString(),
     });
   }
 
@@ -83,7 +73,7 @@ export async function POST(request: Request) {
       totalTokens: number;
     };
   }) => {
-    console.log("Token usage:", usage);
+    if (usage) console.log("Token usage:", usage);
 
     // Find and save the assistant's response
     const lastAssistantMessage = messages[messages.length - 1];
@@ -94,44 +84,51 @@ export async function POST(request: Request) {
       lastAssistantMessage.parts &&
       lastAssistantMessage.parts.length > 0
     ) {
-      await saveMessage(conversationType, {
+      await saveMessage(service, {
         id: lastAssistantMessage.id || crypto.randomUUID(),
         role: "assistant",
-        content: JSON.stringify(lastAssistantMessage.parts || []),
+        // content: JSON.stringify(lastAssistantMessage.parts || []),
         parts: lastAssistantMessage.parts,
-        createdAt: new Date().toISOString(),
+        // createdAt: new Date().toISOString(),
       });
     }
   };
 
-  // Create agent with the selected model and return appropriate response
-  console.log("conversationType", conversationType);
+  const result = await safeValidateUIMessages({
+    messages,
+  });
 
-  if (conversationType === "testing") {
+  if (!result.success) {
+    console.error("ERR: " + result.error.message);
+  }
+
+  // Create agent with the selected model and return appropriate response
+  if (service === "testing") {
     const agent = createTesterAgent(model);
+    validateUIMessages({ messages });
     return createAgentUIStreamResponse({
       agent,
-      uiMessages: validMessages,
+      uiMessages: messages,
       onFinish,
     });
   } else {
     const agent = createExplorerAgent(model);
+    validateUIMessages({ messages });
     return createAgentUIStreamResponse({
       agent,
-      uiMessages: validMessages,
+      uiMessages: messages,
       onFinish,
     });
   }
 }
 
 export async function DELETE(request: NextRequest) {
-  const conversationType =
-    request?.nextUrl?.searchParams.get("conversationType");
+  const ServiceType = request?.nextUrl?.searchParams.get("ServiceType");
 
-  if (!conversationType) throw "Empty conversationType";
+  if (!ServiceType) throw "Empty ServiceType";
 
   try {
-    await clearConversation(conversationType as ConversationType);
+    await clearConversation(ServiceType as ServiceType);
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error("Error clearing conversation:", error);

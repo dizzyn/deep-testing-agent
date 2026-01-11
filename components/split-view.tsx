@@ -9,11 +9,11 @@ interface SplitViewProps {
 
 export function SplitView({ left, right }: SplitViewProps) {
   if (!right) {
-    return <>{left}</>;
+    return <div className="h-full">{left}</div>;
   }
 
   return (
-    <div className="flex-1 flex overflow-hidden">
+    <div className="h-full w-full flex overflow-hidden">
       <div className="flex-1 flex flex-col border-r border-zinc-800">
         {left}
       </div>

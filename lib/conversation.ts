@@ -1,28 +1,29 @@
 import { writeFile, readFile, mkdir } from "fs/promises";
 import { join } from "path";
 import { existsSync } from "fs";
+import { UIMessage } from "ai";
 
 const SESSION_DIR = join(process.cwd(), "public/session");
 const CONVERSATION_ID = "default-session";
 const TESTING_CONVERSATION_ID = "testing-session";
 
-type ConversationType = "default" | "testing";
+type ServiceType = "planning" | "testing";
 
-function getConversationFileName(type: ConversationType): string {
-  return type === "testing" ? "testing.json" : "conversation.json";
+function getConversationFileName(type: ServiceType): string {
+  if (type === "testing") {
+    return "testing.json";
+  } else if (type == "planning") {
+    return "planning.json";
+  } else throw "Unknown conversation type: " + type;
 }
 
-function getConversationId(type: ConversationType): string {
-  return type === "testing" ? TESTING_CONVERSATION_ID : CONVERSATION_ID;
-}
-
-interface Message {
-  id: string;
-  role: "user" | "assistant";
-  content: string;
-  parts?: unknown[];
-  createdAt: string;
-}
+// interface Message {
+//   id: string;
+//   role: "user" | "assistant";
+//   content: string;
+//   parts?: unknown[];
+//   createdAt: string;
+// }
 
 async function ensureSessionDir(): Promise<void> {
   if (!existsSync(SESSION_DIR)) {
@@ -31,8 +32,8 @@ async function ensureSessionDir(): Promise<void> {
 }
 
 export async function loadConversation(
-  type: ConversationType
-): Promise<Message[]> {
+  type: ServiceType
+): Promise<UIMessage[]> {
   try {
     await ensureSessionDir();
     const fileName = getConversationFileName(type);
@@ -51,14 +52,14 @@ export async function loadConversation(
 }
 
 export async function saveMessage(
-  type: ConversationType,
-  message: Message
+  type: ServiceType,
+  message: UIMessage
 ): Promise<void> {
   try {
     await ensureSessionDir();
     const fileName = getConversationFileName(type);
     const filePath = join(SESSION_DIR, fileName);
-    const conversationId = getConversationId(type);
+    const conversationId = type;
 
     // Load existing messages
     const existingMessages = await loadConversation(type);
@@ -68,7 +69,7 @@ export async function saveMessage(
       ...existingMessages,
       {
         ...message,
-        createdAt: new Date().toISOString(),
+        // createdAt: new Date().toISOString(),
       },
     ];
 
@@ -108,7 +109,7 @@ export async function saveMessage(
   }
 }
 
-export async function clearConversation(type: ConversationType): Promise<void> {
+export async function clearConversation(type: ServiceType): Promise<void> {
   try {
     await ensureSessionDir();
     const fileName = getConversationFileName(type);
@@ -119,4 +120,4 @@ export async function clearConversation(type: ConversationType): Promise<void> {
   }
 }
 
-export { CONVERSATION_ID, TESTING_CONVERSATION_ID, type ConversationType };
+export { CONVERSATION_ID, TESTING_CONVERSATION_ID, type ServiceType };

@@ -16,87 +16,6 @@ interface ToolCallPart extends MessagePart {
   output?: unknown;
 }
 
-interface Message {
-  id: string;
-  role: string;
-  content: string;
-  parts: MessagePart[];
-  createdAt: string;
-}
-
-/**
- * Cleans up messages by replacing old tool call outputs with "removed" to save tokens
- * Keeps only the last 2 tool calls with full output, replaces older ones with "removed"
- */
-export function cleanMessages(messages: Message[]): Message[] {
-  // Find all tool calls across all messages to determine which are the most recent
-  const allToolCalls: {
-    messageIndex: number;
-    partIndex: number;
-    part: ToolCallPart;
-  }[] = [];
-
-  messages.forEach((msg, msgIndex) => {
-    if (!msg.parts || !Array.isArray(msg.parts)) return;
-
-    msg.parts.forEach((part, partIndex) => {
-      if (
-        part.type &&
-        (part.type.startsWith("tool-") || part.type === "dynamic-tool") &&
-        (part as ToolCallPart).output
-      ) {
-        allToolCalls.push({
-          messageIndex: msgIndex,
-          partIndex,
-          part: part as ToolCallPart,
-        });
-      }
-    });
-  });
-
-  // Keep only the last 2 tool calls with full output
-  const keepFullOutput = allToolCalls.slice(-2);
-
-  return messages.map((msg: Message, msgIndex: number) => {
-    if (!msg.parts || !Array.isArray(msg.parts)) return msg;
-
-    const cleanedParts = msg.parts.map(
-      (part: MessagePart, partIndex: number) => {
-        // If it's a tool call with output
-        if (
-          part.type &&
-          (part.type.startsWith("tool-") || part.type === "dynamic-tool") &&
-          (part as ToolCallPart).output
-        ) {
-          // Check if this tool call should keep full output
-          const shouldKeepFull = keepFullOutput.some(
-            (item) =>
-              item.messageIndex === msgIndex && item.partIndex === partIndex
-          );
-
-          if (shouldKeepFull) {
-            return part; // Keep as is
-          } else {
-            // Replace output with "removed" to save tokens
-            return {
-              ...part,
-              output: "removed",
-            } as ToolCallPart;
-          }
-        }
-
-        // Keep non-tool parts as is
-        return part;
-      }
-    );
-
-    return {
-      ...msg,
-      parts: cleanedParts,
-    };
-  });
-}
-
 const SESSION_META_PATH = join("public/session", "session_meta.json");
 
 /**
@@ -173,7 +92,7 @@ export const agentTools = {
     inputSchema: z.object({
       content: z.string().describe("The complete test brief markdown content"),
     }),
-    execute: async ({ content }) => {
+    execute: async ({ content }: { content: string }) => {
       return await updateSessionMeta({ testBrief: content });
     },
   }),
@@ -187,14 +106,14 @@ export const agentTools = {
         .string()
         .describe("The complete test protocol markdown content"),
     }),
-    execute: async ({ content }) => {
+    execute: async ({ content }: { content: string }) => {
       return await updateSessionMeta({ testProtocol: content });
     },
   }),
 
   getTestBrief: tool({
     description: "Get the current test brief markdown content. " + warning,
-    inputSchema: z.object({}),
+    inputSchema: z.object({}).strict(),
     execute: async () => {
       return await getContent("testBrief");
     },
@@ -202,45 +121,9 @@ export const agentTools = {
 
   getTestProtocol: tool({
     description: "Get the current test protocol markdown content" + warning,
-    inputSchema: z.object({}),
+    inputSchema: z.object({}).strict(),
     execute: async () => {
       return await getContent("testProtocol");
-    },
-  }),
-
-  listScreenshots: tool({
-    description:
-      "List all available screenshots in the session directory. " + warning,
-    inputSchema: z.object({}),
-    execute: async () => {
-      try {
-        const sessionDir = join("public/session");
-        const files = await readdir(sessionDir);
-        const screenshots = files.filter(
-          (file) =>
-            file.toLowerCase().endsWith(".png") ||
-            file.toLowerCase().endsWith(".jpg") ||
-            file.toLowerCase().endsWith(".jpeg") ||
-            file.toLowerCase().endsWith(".webp")
-        );
-
-        return {
-          success: true,
-          screenshots: screenshots.map((filename) => ({
-            filename,
-            path: `/session/${filename}`,
-            fullPath: join(sessionDir, filename),
-          })),
-          count: screenshots.length,
-        };
-      } catch (error) {
-        return {
-          success: false,
-          message: `Failed to list screenshots: ${error}`,
-          screenshots: [],
-          count: 0,
-        };
-      }
     },
   }),
 
@@ -263,7 +146,15 @@ export const agentTools = {
         .optional()
         .describe("JPEG quality 1-100 (default: 70)"),
     }),
-    execute: async ({ filename, maxWidth = 800, quality = 70 }) => {
+    execute: async ({
+      filename,
+      maxWidth = 800,
+      quality = 70,
+    }: {
+      filename: string;
+      maxWidth?: number;
+      quality?: number;
+    }) => {
       try {
         const sessionDir = join("public/session");
         const filePath = join(sessionDir, filename);

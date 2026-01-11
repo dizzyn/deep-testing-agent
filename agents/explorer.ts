@@ -1,6 +1,6 @@
 import { ToolLoopAgent, InferAgentUIMessage } from "ai";
 import { createModelInstance } from "../lib/model-factory";
-import { getChromeTools } from "../lib/mcp-client";
+import { createChromeTools } from "../lib/chrome-tools";
 import { agentTools } from "../lib/agent-tools";
 import { ModelId } from "@/lib/models";
 
@@ -62,7 +62,7 @@ _Agent Note: I will scan the default inventory list to find the highest price. I
 </test brief example>
 .`;
 
-const chromeTools = await getChromeTools();
+const chromeTools = createChromeTools();
 
 export function createExplorerAgent(modelId: string) {
   if (!modelId) throw "Missing model type";
@@ -75,12 +75,16 @@ export function createExplorerAgent(modelId: string) {
     model,
     temperature: 0.2,
     instructions,
-    tools: { ...chromeTools, getTestBrief, setTestBrief },
-    experimental_telemetry: {
-      isEnabled: true,
-      recordInputs: true,
-      recordOutputs: true,
+    tools: {
+      ...chromeTools,
+      getTestBrief,
+      setTestBrief, //Known type issue with setTestBrief tool
     },
+    // experimental_telemetry: {
+    //   isEnabled: true,
+    //   recordInputs: true,
+    //   recordOutputs: true,
+    // },
   });
 }
 

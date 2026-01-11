@@ -1,17 +1,16 @@
 import { createMCPClient, MCPClient } from "@ai-sdk/mcp";
 import { Experimental_StdioMCPTransport as StdioClientTransport } from "@ai-sdk/mcp/mcp-stdio";
 
-// 1. Use a single variable to hold the shared instance
+// Shared MCP client instance for all agents
 let sharedMCPClient: MCPClient | null = null;
 
 /**
- * Internal function to initialize the connection once.
- * We use a fixed profile path so both "logical" agents share the session.
+ * Initialize the shared Chrome DevTools MCP client
  */
-async function initializeSharedClient() {
+async function initializeSharedClient(): Promise<MCPClient> {
   const args = ["./chrome-devtools-mcp/build/src/index.js"];
 
-  // Use a SINGLE shared directory for the session
+  // Use a shared profile directory so all agents share the same browser session
   args.push("--user-data-dir", "/tmp/chrome-profile-shared");
 
   const client = await createMCPClient({
@@ -25,21 +24,11 @@ async function initializeSharedClient() {
 }
 
 /**
- * Gets the singleton MCP client.
- * If it doesn't exist, it creates it. If it does, it reuses it.
+ * Get the singleton MCP client instance
  */
-export async function getSharedMCPClient() {
+export async function getSharedMCPClient(): Promise<MCPClient> {
   if (!sharedMCPClient) {
     sharedMCPClient = await initializeSharedClient();
   }
   return sharedMCPClient;
-}
-
-/**
- * Gets Chrome DevTools tools.
- * Both agents now receive tools connected to the SAME browser instance.
- */
-export async function getChromeTools() {
-  const mcpClient = await getSharedMCPClient();
-  return await mcpClient.tools();
 }

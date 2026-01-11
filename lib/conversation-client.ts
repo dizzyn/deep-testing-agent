@@ -1,19 +1,11 @@
 import type { ExplorerAgentUIMessage } from "@/agents/explorer";
-import type { ConversationType } from "@/lib/conversation";
-
-interface StoredMessage {
-  id: string;
-  role: "user" | "assistant";
-  content: string;
-  parts?: unknown[];
-  createdAt: string;
-}
+import type { ServiceType } from "@/lib/conversation";
 
 export async function loadConversationHistory(
-  conversationType: ConversationType
+  serviceType: ServiceType
 ): Promise<ExplorerAgentUIMessage[]> {
   try {
-    const res = await fetch(`/api/chat?conversationType=${conversationType}`);
+    const res = await fetch(`/api/chat?service=${serviceType}`);
     if (!res.ok) {
       console.error("Failed to fetch conversation history:", res.statusText);
       return [];
@@ -24,16 +16,7 @@ export async function loadConversationHistory(
       return [];
     }
 
-    const formatted = data.map(
-      (msg: StoredMessage): ExplorerAgentUIMessage => ({
-        ...msg,
-        parts: Array.isArray(msg.parts)
-          ? msg.parts
-          : JSON.parse(msg.content || "[]"),
-      })
-    ) as ExplorerAgentUIMessage[];
-
-    return formatted;
+    return data;
   } catch (error) {
     console.error("History load error:", error);
     return [];
@@ -41,10 +24,10 @@ export async function loadConversationHistory(
 }
 
 export async function clearConversation(
-  conversationType: ConversationType
+  ServiceType: ServiceType
 ): Promise<void> {
   try {
-    const res = await fetch(`/api/chat?conversationType=${conversationType}`, {
+    const res = await fetch(`/api/chat?ServiceType=${ServiceType}`, {
       method: "DELETE",
     });
     if (!res.ok) {

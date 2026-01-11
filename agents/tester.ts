@@ -1,6 +1,6 @@
 import { InferAgentUIMessage, stepCountIs, ToolLoopAgent } from "ai";
 import { createModelInstance } from "../lib/model-factory";
-import { getChromeTools } from "../lib/mcp-client";
+import { createChromeTools } from "../lib/chrome-tools";
 import { agentTools } from "../lib/agent-tools";
 import { ModelId } from "@/lib/models";
 
@@ -61,7 +61,7 @@ Note: (optional) any additional note if needed - eg. brief was not followed full
 </report example>
 `;
 
-const chromeTools = await getChromeTools();
+const chromeTools = createChromeTools();
 
 export function createTesterAgent(modelId: string) {
   if (!modelId) throw "Missing model type";
@@ -84,13 +84,13 @@ export function createTesterAgent(modelId: string) {
       ...chromeTools,
       getTestBrief,
       getTestProtocol,
-      setTestTestProtocol,
+      setTestTestProtocol, //Known type issue with setTestBrief tool
     },
-    experimental_telemetry: {
-      isEnabled: true,
-      recordInputs: true,
-      recordOutputs: true,
-    },
+    // experimental_telemetry: {
+    //   isEnabled: true,
+    //   recordInputs: true,
+    //   recordOutputs: true,
+    // },
   });
 }
 

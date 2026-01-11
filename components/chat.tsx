@@ -5,10 +5,8 @@ import type { ExplorerAgentUIMessage } from "@/agents/explorer";
 import { ChatBubble } from "./common/chat-bubble";
 import { MessageSizeCounter } from "./common/message-size-counter";
 import { useState, useRef, useEffect, useCallback, ReactNode } from "react";
-import type { ConversationType } from "@/lib/conversation";
+import type { ServiceType } from "@/lib/conversation";
 import { loadConversationHistory } from "@/lib/conversation-client";
-
-const conversationType = "default" satisfies ConversationType;
 
 export type InputFn = (props: {
   isGenerating: boolean;
@@ -19,10 +17,12 @@ export function Chat({
   selectedModel,
   emptyState,
   inputGenerator,
+  service,
 }: {
   selectedModel: string;
-  emptyState: ReactNode;
+  emptyState: InputFn;
   inputGenerator: InputFn;
+  service: ServiceType;
 }) {
   // 1. Setup & State
   const { messages, sendMessage, setMessages, status } =
@@ -76,7 +76,7 @@ export function Chat({
 
     const loadHistory = async () => {
       try {
-        const formatted = await loadConversationHistory(conversationType);
+        const formatted = await loadConversationHistory(service);
         if (formatted.length > 0) {
           setMessages(formatted);
         }
@@ -87,20 +87,20 @@ export function Chat({
       }
     };
     loadHistory();
-  }, [hasLoadedHistory, setMessages]);
+  }, [hasLoadedHistory, service, setMessages]);
 
   function addMessage(text: string) {
     sendMessage(
       { text },
       {
-        body: { model: selectedModel, conversationType },
+        body: { model: selectedModel, service },
       }
     );
   }
 
   return (
     <div className="flex flex-col h-full relative">
-      {/* Fixed Header Bar */}
+      {/* Sub-header Bar */}
       <header className="flex-none bg-zinc-950/95 backdrop-blur-sm border-b border-zinc-800 px-8 py-2 z-40 relative">
         <div className=" mx-auto flex justify-between items-center">
           <div className="text-sm text-zinc-400">Deep Testing Agent</div>
@@ -115,14 +115,17 @@ export function Chat({
       >
         <div className="max-w-3xl mx-auto space-y-8 pb-4">
           {messages.length === 0 && hasLoadedHistory
-            ? emptyState
-            : messages.map((msg, idx) => (
-                <ChatBubble
-                  key={msg.id || idx}
-                  message={msg}
-                  messageIndex={idx}
-                />
-              ))}
+            ? emptyState({ addMessage, isGenerating })
+            : messages.map((msg, idx) => {
+                console.log("MSG", msg);
+                return (
+                  <ChatBubble
+                    key={msg.id || idx}
+                    message={msg}
+                    messageIndex={idx}
+                  />
+                );
+              })}
         </div>
       </main>
 

@@ -1,5 +1,6 @@
 "use client";
 
+import { UIMessage } from "ai";
 import { ToolCall } from "./tool-call";
 
 // --- Icons ---
@@ -42,24 +43,9 @@ const SparkleIcon = () => (
 );
 
 // --- Types ---
-interface MessagePart {
-  type: string;
-  text?: string;
-  toolName?: string;
-  state?: string;
-  input?: unknown;
-  output?: unknown;
-  toolCallId?: string;
-}
-
-interface Message {
-  id?: string;
-  role: string;
-  parts: MessagePart[];
-}
 
 interface ChatBubbleProps {
-  message: Message;
+  message: UIMessage;
   messageIndex: number;
 }
 

@@ -71,11 +71,7 @@ export function ModelSelectorCompact({
                     : "border border-transparent"
                 }`}
               >
-                <div
-                  className={`w-2 h-2 rounded-full ${
-                    model.available ? "bg-green-400" : "bg-red-400"
-                  }`}
-                />
+                <div className={"w-2 h-2 rounded-full bg-green-400"} />
                 <div className="flex-1">
                   <div className="text-white text-sm font-medium">
                     {model.name}

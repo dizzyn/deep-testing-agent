@@ -89,8 +89,9 @@ export function ChatView({
 }) {
   return (
     <Chat
+      service="planning"
       selectedModel={selectedModel}
-      emptyState={
+      emptyState={() => (
         <div className="flex-none text-center space-y-6 mb-12">
           <h1 className="text-4xl font-bold text-zinc-100">
             Deep Testing Agent
@@ -100,7 +101,7 @@ export function ChatView({
             handle the rest.
           </p>
         </div>
-      }
+      )}
       inputGenerator={(props) => <Form {...props} />}
     />
   );

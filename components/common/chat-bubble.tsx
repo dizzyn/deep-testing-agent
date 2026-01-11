@@ -128,7 +128,7 @@ export function ChatBubble({ message, messageIndex }: ChatBubbleProps) {
               return null;
 
             // case "tool-setTestBrief":
-            // case "tool-setTestTestProtocol":
+            // case "tool-setTestProtocol":
             case "dynamic-tool":
               // Handle tool types
               if (

@@ -1,4 +1,4 @@
-import { ToolLoopAgent, InferAgentUIMessage } from "ai";
+import { InferAgentUIMessage, ToolLoopAgent } from "ai";
 import { createModelInstance } from "../lib/model-factory";
 import { createChromeTools } from "../lib/chrome-tools";
 import { agentTools } from "../lib/agent-tools";

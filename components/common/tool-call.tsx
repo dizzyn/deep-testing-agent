@@ -43,13 +43,21 @@ export function ToolCall({ part, messageIndex, partIndex }: ToolCallProps) {
 
   // Render custom components for specific tools
   const renderCustomComponent = () => {
-    // Handle screenshot display
+    // Handle screenshot display - check both toolName and type fields
     if (
-      part.toolName === "take_screenshot" &&
+      (part.toolName === "take_screenshot" ||
+        part.type === "tool-take_screenshot") &&
       part.state === "output-available"
     ) {
-      const output = part.output as { content?: Array<{ text?: string }> };
-      const outputText = output?.content?.[0]?.text || "";
+      // Handle both string output and object output formats
+      let outputText = "";
+      if (typeof part.output === "string") {
+        outputText = part.output;
+      } else {
+        const output = part.output as { content?: Array<{ text?: string }> };
+        outputText = output?.content?.[0]?.text || "";
+      }
+
       const match = outputText.match(/Saved screenshot to (.+)\.$/m);
 
       if (match) {

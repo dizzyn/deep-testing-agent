@@ -9,12 +9,12 @@ interface MessagePart {
   [key: string]: unknown;
 }
 
-interface ToolCallPart extends MessagePart {
-  toolCallId: string;
-  state: string;
-  input: Record<string, unknown>;
-  output?: unknown;
-}
+// interface ToolCallPart extends MessagePart {
+//   toolCallId: string;
+//   state: string;
+//   input: Record<string, unknown>;
+//   output?: unknown;
+// }
 
 const SESSION_META_PATH = join("public/session", "session_meta.json");
 
@@ -97,7 +97,7 @@ export const agentTools = {
     },
   }),
 
-  setTestTestProtocol: tool({
+  setTestProtocol: tool({
     description:
       "Create/Update the test protocol markdown content in session metadata." +
       warning,

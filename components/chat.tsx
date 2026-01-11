@@ -117,7 +117,6 @@ export function Chat({
           {messages.length === 0 && hasLoadedHistory
             ? emptyState({ addMessage, isGenerating })
             : messages.map((msg, idx) => {
-                console.log("MSG", msg);
                 return (
                   <ChatBubble
                     key={msg.id || idx}

@@ -40,12 +40,6 @@ export async function POST(request: Request) {
   if (!model) throw "Empty model parameter";
   if (!service) throw "Empty ServiceType";
 
-  // Clean up messages to save tokens - replace old tool outputs with "removed"
-  // const validMessages = messages.filter(
-  //   (msg: UIMessage) =>
-  //     msg.parts && Array.isArray(msg.parts) && msg.parts.length > 0
-  // );
-
   // Persist the latest user message
   const lastUserMessage = messages[messages.length - 1];
   if (lastUserMessage && lastUserMessage.role === "user") {

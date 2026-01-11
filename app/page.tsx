@@ -1,6 +1,5 @@
 "use client";
 
-import { Chat } from "@/components/chat";
 import { SplitView } from "@/components/split-view";
 import { SessionControls } from "@/components/session-controls";
 import { ModelSelectorCompact } from "@/components/model-selector-compact";
@@ -10,6 +9,7 @@ import { useEffect, useState } from "react";
 import type { SessionData } from "./api/session/route";
 import { fetchSessionData } from "@/lib/session";
 import { TestRun } from "@/components/test-run";
+import { ChatView } from "@/components/chat-view";
 
 function AppContent() {
   const [sessionData, setSessionData] = useState<SessionData | null>(null);
@@ -52,7 +52,7 @@ function AppContent() {
   const showSideBySide = sessionData.status === "testing";
 
   return (
-    <>
+    <div className="flex flex-col h-screen overflow-hidden bg-black">
       <header className="flex-none bg-zinc-950/80 backdrop-blur-md border-b border-zinc-800 p-4 z-20">
         <div className="max-w-full mx-auto flex items-center justify-between px-4">
           <div className="flex items-center gap-3">
@@ -72,14 +72,15 @@ function AppContent() {
           </p>
         </div>
       </header>
-
-      <SplitView
-        left={<Chat selectedModel={selectedModel} />}
-        right={
-          showSideBySide ? <TestRun selectedModel={selectedModel} /> : null
-        }
-      />
-    </>
+      <div className="flex-1 min-h-0 relative">
+        <SplitView
+          left={<ChatView selectedModel={selectedModel} />}
+          right={
+            showSideBySide ? <TestRun selectedModel={selectedModel} /> : null
+          }
+        />
+      </div>{" "}
+    </div>
   );
 }
 

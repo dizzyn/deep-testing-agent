@@ -1,7 +1,8 @@
 import type { SessionData } from "@/app/api/session/route";
 
 export async function fetchSessionData(): Promise<SessionData> {
-  const response = await fetch("/api/session");
+  const baseUrl = typeof window !== "undefined" ? "" : "http://localhost:3000";
+  const response = await fetch(`${baseUrl}/api/session`);
   if (!response.ok) {
     throw new Error("Failed to fetch session data");
   }
@@ -11,7 +12,8 @@ export async function fetchSessionData(): Promise<SessionData> {
 export async function updateSessionData(
   data: Partial<SessionData>
 ): Promise<void> {
-  const response = await fetch("/api/session", {
+  const baseUrl = typeof window !== "undefined" ? "" : "http://localhost:3000";
+  const response = await fetch(`${baseUrl}/api/session`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -25,7 +27,8 @@ export async function updateSessionData(
 }
 
 export async function resetSession(): Promise<void> {
-  const response = await fetch("/api/session", {
+  const baseUrl = typeof window !== "undefined" ? "" : "http://localhost:3000";
+  const response = await fetch(`${baseUrl}/api/session`, {
     method: "DELETE",
   });
 

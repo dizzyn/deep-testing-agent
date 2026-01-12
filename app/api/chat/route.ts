@@ -130,8 +130,7 @@ export async function POST(request: Request) {
       return executeThinkerDoerOrchestrator(
         messages,
         modelConfiguration,
-        service,
-        onFinish
+        service
       );
 
     case "thinker-doer-langgraph":

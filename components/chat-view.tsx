@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect } from "react";
 import { Chat, InputFn } from "./chat";
+import { useModel } from "@/lib/model-context";
 
 function Form({ isGenerating, addMessage }: Parameters<InputFn>[0]) {
   const [input, setInput] = useState("");
@@ -81,16 +82,13 @@ function Form({ isGenerating, addMessage }: Parameters<InputFn>[0]) {
   );
 }
 
-export function ChatView({
-  selectedModel,
-}: {
-  selectedModel: string;
-  children?: React.ReactNode;
-}) {
+export function ChatView({ children }: { children?: React.ReactNode }) {
+  const { modelConfiguration } = useModel();
+
   return (
     <Chat
       service="planning"
-      selectedModel={selectedModel}
+      modelConfiguration={modelConfiguration}
       emptyState={() => (
         <div className="flex-none text-center space-y-6 mb-12">
           <h1 className="text-4xl font-bold text-zinc-100">

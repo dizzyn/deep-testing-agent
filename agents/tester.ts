@@ -68,7 +68,7 @@ export function createTesterAgent(modelId: string) {
 
   const model = createModelInstance(modelId as ModelId);
 
-  const { getTestBrief, getTestProtocol, set_test_protocol } = agentTools;
+  const { get_test_brief, get_test_protocol, set_test_protocol } = agentTools;
 
   return new ToolLoopAgent({
     model,
@@ -82,9 +82,9 @@ export function createTesterAgent(modelId: string) {
     },
     tools: {
       ...chromeTools,
-      getTestBrief,
-      getTestProtocol,
-      set_test_protocol, //Known type issue with set_test_brief tool
+      get_test_brief,
+      get_test_protocol,
+      set_test_protocol,
     },
     // experimental_telemetry: {
     //   isEnabled: true,

@@ -1,17 +1,15 @@
 "use client";
 
 import { Chat } from "./chat";
+import { useModel } from "@/lib/model-context";
 
-export function TestRun({
-  selectedModel,
-}: {
-  selectedModel: string;
-  children?: React.ReactNode;
-}) {
+export function TestRun({ children }: { children?: React.ReactNode }) {
+  const { modelConfiguration } = useModel();
+
   return (
     <Chat
       service="testing"
-      selectedModel={selectedModel}
+      modelConfiguration={modelConfiguration}
       emptyState={({ isGenerating, addMessage }) => (
         <div className="flex items-center justify-center min-h-full">
           <div className="text-center space-y-6 max-w-md">

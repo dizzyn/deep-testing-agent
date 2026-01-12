@@ -4,16 +4,13 @@ import {
   loadConversation,
   type ServiceType,
 } from "@/lib/conversation";
-import {
-  convertToModelMessages,
-  createAgentUIStreamResponse,
-  safeValidateUIMessages,
-  validateUIMessages,
-  type UIMessage,
-} from "ai";
-import { createExplorerAgent } from "@/agents/explorer";
-import { createTesterAgent } from "@/agents/tester";
+import { safeValidateUIMessages, validateUIMessages, type UIMessage } from "ai";
 import { saveMessage } from "@/lib/conversation";
+import type { ModelConfiguration } from "@/lib/model-context";
+import { ORCHESTRATORS, type ModelId, type OrchestratorId } from "@/lib/models";
+import { executeAgentOrchestrator } from "@/lib/orchestrators/agent";
+import { executeThinkerDoerOrchestrator } from "@/lib/orchestrators/thinker-doer";
+import { executeThinkerDoerLangGraphOrchestrator } from "@/lib/orchestrators/thinker-doer-langgraph";
 
 export async function GET(request: NextRequest) {
   const serviceType = request?.nextUrl?.searchParams.get("service");
@@ -39,6 +36,27 @@ export async function POST(request: Request) {
 
   if (!model) throw "Empty model parameter";
   if (!service) throw "Empty ServiceType";
+
+  // Handle both old string format and new ModelConfiguration format
+  let modelConfiguration: ModelConfiguration;
+  if (typeof model === "string") {
+    // Backward compatibility: convert string to ModelConfiguration
+    const orchestrator = ORCHESTRATORS[0]; // Default to first orchestrator
+    const roleModels: Record<string, ModelId> = {};
+    roleModels[orchestrator.models[0]] = model as ModelId;
+    modelConfiguration = {
+      orchestratorId: orchestrator.id as OrchestratorId,
+      roleModels,
+    };
+  } else {
+    modelConfiguration = model as ModelConfiguration;
+  }
+
+  // For now, use the first role's model for single-model agents
+  const orchestrator =
+    ORCHESTRATORS.find((o) => o.id === modelConfiguration.orchestratorId) ||
+    ORCHESTRATORS[0];
+  const primaryModelId = modelConfiguration.roleModels[orchestrator.models[0]];
 
   // Persist the latest user message
   const lastUserMessage = messages[messages.length - 1];
@@ -96,23 +114,36 @@ export async function POST(request: Request) {
     console.error("ERR: " + result.error.message);
   }
 
-  // Create agent with the selected model and return appropriate response
-  if (service === "testing") {
-    const agent = createTesterAgent(model);
-    validateUIMessages({ messages });
-    return createAgentUIStreamResponse({
-      agent,
-      uiMessages: messages,
-      onFinish,
-    });
-  } else {
-    const agent = createExplorerAgent(model);
-    validateUIMessages({ messages });
-    return createAgentUIStreamResponse({
-      agent,
-      uiMessages: messages,
-      onFinish,
-    });
+  validateUIMessages({ messages });
+
+  // Route to appropriate orchestrator based on configuration
+  switch (modelConfiguration.orchestratorId) {
+    case "agent":
+      return executeAgentOrchestrator(
+        messages,
+        primaryModelId,
+        service,
+        onFinish
+      );
+
+    case "thinker-doer":
+      return executeThinkerDoerOrchestrator(
+        messages,
+        modelConfiguration,
+        service,
+        onFinish
+      );
+
+    case "thinker-doer-langgraph":
+      return executeThinkerDoerLangGraphOrchestrator(
+        messages,
+        modelConfiguration,
+        service,
+        onFinish
+      );
+
+    default:
+      throw "Unknown orchestrator configuration";
   }
 }
 

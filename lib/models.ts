@@ -3,6 +3,7 @@ export type ModelProvider = "mistral" | "openrouter";
 export interface OrchestratorConfig {
   id: string;
   name: string;
+  models: string[];
 }
 
 export interface ModelConfig {
@@ -15,15 +16,17 @@ export const ORCHESTRATORS = [
   {
     id: "agent",
     name: "Agent",
-    // models: ["executor"],
+    models: ["Model"],
   },
   {
-    id: "doer-thinker",
-    name: "Doer-Thinker",
+    id: "thinker-doer",
+    name: "Thinker-Doer",
+    models: ["Doer", "Thinker"],
   },
   {
-    id: "doer-thinker-langgraph",
-    name: "LangGraph Doer-Thinker",
+    id: "thinker-doer-langgraph",
+    name: "LangGraph Thinker-Doer",
+    models: ["Doer", "Thinker"],
   },
 ] as const satisfies OrchestratorConfig[];
 
@@ -56,9 +59,21 @@ export const MODELS = [
 ] as const satisfies ModelConfig[];
 
 export type ModelId = (typeof MODELS)[number]["id"];
+export type OrchestratorId = (typeof ORCHESTRATORS)[number]["id"];
 
 // Default model
 export const DEFAULT_MODEL: ModelId = "devstral-latest";
 
-// Storage key
+// Default orchestrator
+export const DEFAULT_ORCHESTRATOR: OrchestratorId = "agent";
+
+// Storage keys
 export const MODEL_STORAGE_KEY = "selected-model";
+export const ORCHESTRATOR_STORAGE_KEY = "selected-orchestrator";
+export const ORCHESTRATOR_MODELS_STORAGE_KEY = "orchestrator-models";
+
+// Type for storing orchestrator model assignments
+export interface OrchestratorModelAssignment {
+  orchestratorId: OrchestratorId;
+  roleModels: Record<string, ModelId>; // role name -> model id
+}

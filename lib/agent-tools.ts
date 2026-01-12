@@ -1,13 +1,13 @@
 import { tool } from "ai";
-import { readFile, writeFile, readdir } from "fs/promises";
+import { readFile, writeFile } from "fs/promises";
 import { join } from "path";
 import { z } from "zod";
 import sharp from "sharp";
 
-interface MessagePart {
-  type: string;
-  [key: string]: unknown;
-}
+// interface MessagePart {
+//   type: string;
+//   [key: string]: unknown;
+// }
 
 // interface ToolCallPart extends MessagePart {
 //   toolCallId: string;
@@ -111,7 +111,7 @@ export const agentTools = {
     },
   }),
 
-  getTestBrief: tool({
+  get_test_brief: tool({
     description: "Get the current test brief markdown content. " + warning,
     inputSchema: z.object({}).strict(),
     execute: async () => {
@@ -119,7 +119,7 @@ export const agentTools = {
     },
   }),
 
-  getTestProtocol: tool({
+  get_test_protocol: tool({
     description: "Get the current test protocol markdown content" + warning,
     inputSchema: z.object({}).strict(),
     execute: async () => {
@@ -127,7 +127,7 @@ export const agentTools = {
     },
   }),
 
-  readScreenshot: tool({
+  read_screenshot: tool({
     description:
       "Read and analyze screenshot content. Returns compressed base64 encoded image data that the AI can process. " +
       warning,

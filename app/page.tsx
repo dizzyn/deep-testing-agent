@@ -2,7 +2,7 @@
 
 import { SplitView } from "@/components/split-view";
 import { SessionControls } from "@/components/session-controls";
-import { ModelSelectorCompact } from "@/components/model-selector-compact";
+import { ModelSelectorCompact } from "@/components/model-selector";
 import { ModelProvider, useModel } from "@/lib/model-context";
 import { MODELS } from "@/lib/models";
 import { useEffect, useState } from "react";
@@ -13,7 +13,6 @@ import { ChatView } from "@/components/chat-view";
 
 function AppContent() {
   const [sessionData, setSessionData] = useState<SessionData | null>(null);
-  const { selectedModel, setSelectedModel } = useModel();
 
   const loadSessionData = async (): Promise<void> => {
     try {
@@ -61,11 +60,7 @@ function AppContent() {
                 Deep Testing Agent
               </h1>
             </div>
-            <ModelSelectorCompact
-              models={MODELS}
-              selectedModel={selectedModel}
-              onModelChange={setSelectedModel}
-            />
+            <ModelSelectorCompact />
           </div>
           <p className="text-[11px] text-zinc-400 font-mono">
             <SessionControls onSessionReset={() => window.location.reload()} />
@@ -74,10 +69,8 @@ function AppContent() {
       </header>
       <div className="flex-1 flex flex-col min-h-0 relative">
         <SplitView
-          left={<ChatView selectedModel={selectedModel} />}
-          right={
-            showSideBySide ? <TestRun selectedModel={selectedModel} /> : null
-          }
+          left={<ChatView />}
+          right={showSideBySide ? <TestRun /> : null}
         />
       </div>
     </div>

@@ -7,6 +7,7 @@ import { MessageSizeCounter } from "./common/message-size-counter";
 import { useState, useRef, useEffect, useCallback, ReactNode } from "react";
 import type { ServiceType } from "@/lib/conversation";
 import { loadConversationHistory } from "@/lib/conversation-client";
+import { ModelConfiguration } from "@/lib/model-context";
 
 export type InputFn = (props: {
   isGenerating: boolean;
@@ -14,12 +15,12 @@ export type InputFn = (props: {
 }) => ReactNode;
 
 export function Chat({
-  selectedModel,
+  modelConfiguration,
   emptyState,
   inputGenerator,
   service,
 }: {
-  selectedModel: string;
+  modelConfiguration: ModelConfiguration;
   emptyState: InputFn;
   inputGenerator: InputFn;
   service: ServiceType;
@@ -93,7 +94,7 @@ export function Chat({
     sendMessage(
       { text },
       {
-        body: { model: selectedModel, service },
+        body: { model: modelConfiguration, service },
       }
     );
   }

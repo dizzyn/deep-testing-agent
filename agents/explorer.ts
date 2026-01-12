@@ -69,7 +69,7 @@ export function createExplorerAgent(modelId: string) {
 
   const model = createModelInstance(modelId as ModelId);
 
-  const { getTestBrief, set_test_brief } = agentTools;
+  const { get_test_brief, set_test_brief } = agentTools;
 
   return new ToolLoopAgent({
     model,
@@ -77,8 +77,8 @@ export function createExplorerAgent(modelId: string) {
     instructions,
     tools: {
       ...chromeTools,
-      getTestBrief,
-      set_test_brief, //Known type issue with set_test_brief tool
+      get_test_brief,
+      set_test_brief,
     },
     // experimental_telemetry: {
     //   isEnabled: true,

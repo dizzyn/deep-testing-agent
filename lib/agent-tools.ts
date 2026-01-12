@@ -85,7 +85,7 @@ const warning = "(User sees the full content, don't repeat in chat)";
  * Custom tools for the Chrome testing agent
  */
 export const agentTools = {
-  setTestBrief: tool({
+  set_test_brief: tool({
     description:
       "Create/Update the test brief markdown content in session metadata." +
       warning,
@@ -97,7 +97,7 @@ export const agentTools = {
     },
   }),
 
-  setTestProtocol: tool({
+  set_test_protocol: tool({
     description:
       "Create/Update the test protocol markdown content in session metadata." +
       warning,

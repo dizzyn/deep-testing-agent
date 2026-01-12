@@ -18,10 +18,18 @@ interface ToolCallProps {
 
 export function ToolCall({ part, messageIndex, partIndex }: ToolCallProps) {
   const getToolDisplayName = (toolName?: string): string => {
-    if (!toolName) return "unknown_tool";
+    if (!toolName) return "Unknown Tool";
 
-    // Remove mcp_chrome_devtools_ prefix and keep snake_case
-    return toolName.replace(/^mcp_chrome_devtools_/, "");
+    // Remove prefixes and convert to display format
+    const displayName = toolName
+      .replace(/^mcp_chrome_devtools_/, "")
+      .replace(/^tool[-_]/, "");
+
+    // Convert snake_case or kebab-case to Title Case
+    return displayName
+      .split(/[-_]/)
+      .map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+      .join(" ");
   };
 
   const isCompleted = part.state === "output-available";
@@ -84,7 +92,10 @@ export function ToolCall({ part, messageIndex, partIndex }: ToolCallProps) {
     }
 
     // Handle test brief updates - check by type since toolName might not be set
-    if (part.toolName === "setTestBrief" || part.type === "tool-setTestBrief") {
+    if (
+      part.toolName === "set_test_brief" ||
+      part.type === "tool-set_test_brief"
+    ) {
       const input = part.input as { content?: string };
       const testBrief = input?.content || "";
 
@@ -97,8 +108,8 @@ export function ToolCall({ part, messageIndex, partIndex }: ToolCallProps) {
 
     // Handle test protocol updates
     if (
-      part.toolName === "setTestTestProtocol" ||
-      part.type === "tool-setTestTestProtocol"
+      part.toolName === "set_test_protocol" ||
+      part.type === "tool-set_test_protocol"
     ) {
       const input = part.input as { content?: string };
       const testProtocol = input?.content || "";

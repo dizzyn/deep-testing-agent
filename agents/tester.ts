@@ -36,7 +36,7 @@ Expected: **The test protocol is completed on the end by writing PASSED/FAILED i
 
 # Tools:
 - When taking screenshots, always save them to the public/session/ directory.
-- When the brief is generated, send the content to tool:setTestProtocol,
+- When the brief is generated, send the content to tool:set_test_protocol,
   - don't retrieve as text response
   - just ask user if we can start test.
 - Don't repeat information from the tool calls, user see the tools results 
@@ -68,7 +68,7 @@ export function createTesterAgent(modelId: string) {
 
   const model = createModelInstance(modelId as ModelId);
 
-  const { getTestBrief, getTestProtocol, setTestProtocol } = agentTools;
+  const { getTestBrief, getTestProtocol, set_test_protocol } = agentTools;
 
   return new ToolLoopAgent({
     model,
@@ -84,7 +84,7 @@ export function createTesterAgent(modelId: string) {
       ...chromeTools,
       getTestBrief,
       getTestProtocol,
-      setTestProtocol, //Known type issue with setTestBrief tool
+      set_test_protocol, //Known type issue with set_test_brief tool
     },
     // experimental_telemetry: {
     //   isEnabled: true,

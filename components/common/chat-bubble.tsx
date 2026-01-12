@@ -29,6 +29,18 @@ const AIIcon = () => (
   </div>
 );
 
+const ThinkerIcon = () => (
+  <div className="w-6 h-6 rounded-lg bg-purple-600 border border-purple-500 flex items-center justify-center text-white shrink-0 shadow-sm">
+    <span className="text-xs">🧠</span>
+  </div>
+);
+
+const DoerIcon = () => (
+  <div className="w-6 h-6 rounded-lg bg-green-600 border border-green-500 flex items-center justify-center text-white shrink-0 shadow-sm">
+    <span className="text-xs">⚡</span>
+  </div>
+);
+
 const SparkleIcon = () => (
   <svg
     xmlns="http://www.w3.org/2000/svg"
@@ -43,6 +55,32 @@ const SparkleIcon = () => (
 );
 
 // --- Types ---
+
+interface ThinkerData {
+  type:
+    | "thinker-status"
+    | "thinker-thinking"
+    | "thinker-decision"
+    | "task-delegation"
+    | "thinker-completion"
+    | "thinker-error";
+  message?: string;
+  step?: number;
+  decision?: "TASK" | "FINISH" | "UNKNOWN";
+  content?: string;
+  task?: string;
+  finalAnswer?: string;
+  error?: string;
+}
+
+interface DoerData {
+  type: "doer-start" | "tool-execution" | "tool-result" | "doer-completion";
+  task?: string;
+  step?: number;
+  tool?: string;
+  input?: Record<string, unknown>;
+  result?: unknown;
+}
 
 interface ChatBubbleProps {
   message: UIMessage;
@@ -126,6 +164,107 @@ export function ChatBubble({ message, messageIndex }: ChatBubbleProps) {
 
             case "step-start":
               return null;
+
+            case "data-message-thinker":
+              const thinkerPart = part as { data: ThinkerData };
+              const thinkerData = thinkerPart.data;
+              return (
+                <div key={partIndex} className="flex gap-2 w-full my-1">
+                  <ThinkerIcon />
+                  <div className="flex-1 text-xs text-purple-300 bg-purple-950/30 border border-purple-800 px-3 py-2 rounded-lg">
+                    {thinkerData.type === "thinker-status" && (
+                      <span>{thinkerData.message}</span>
+                    )}
+                    {thinkerData.type === "thinker-thinking" && (
+                      <span>{thinkerData.message}</span>
+                    )}
+                    {thinkerData.type === "thinker-decision" && (
+                      <div>
+                        <span className="font-mono text-purple-200">
+                          {thinkerData.decision}:
+                        </span>{" "}
+                        <span className="text-purple-100">
+                          {thinkerData.content
+                            ?.replace(/^(TASK:|FINISH:)/, "")
+                            .trim()}
+                        </span>
+                      </div>
+                    )}
+                    {thinkerData.type === "task-delegation" && (
+                      <div>
+                        <span className="text-purple-200">Delegating:</span>{" "}
+                        <span className="text-purple-100">
+                          {thinkerData.task}
+                        </span>
+                      </div>
+                    )}
+                    {thinkerData.type === "thinker-completion" && (
+                      <div>
+                        <span className="text-green-300">
+                          {thinkerData.message}
+                        </span>
+                      </div>
+                    )}
+                    {thinkerData.type === "thinker-error" && (
+                      <div>
+                        <span className="text-red-300">Error:</span>{" "}
+                        <span className="text-red-200">
+                          {thinkerData.error}
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              );
+
+            case "data-message-doer":
+              const doerPart = part as { data: DoerData };
+              const doerData = doerPart.data;
+              return (
+                <div key={partIndex} className="flex gap-2 w-full my-1">
+                  <DoerIcon />
+                  <div className="flex-1 text-xs text-green-300 bg-green-950/30 border border-green-800 px-3 py-2 rounded-lg">
+                    {doerData.type === "doer-start" && (
+                      <div>
+                        <span className="text-green-200">Starting task:</span>{" "}
+                        <span className="text-green-100">{doerData.task}</span>
+                      </div>
+                    )}
+                    {doerData.type === "tool-execution" && (
+                      <div>
+                        <span className="text-green-200">Using tool:</span>{" "}
+                        <span className="font-mono text-green-100">
+                          {doerData.tool}
+                        </span>
+                        {doerData.input &&
+                          Object.keys(doerData.input).length > 0 && (
+                            <span className="text-green-200 ml-2">
+                              ({JSON.stringify(doerData.input)})
+                            </span>
+                          )}
+                      </div>
+                    )}
+                    {doerData.type === "tool-result" && (
+                      <div>
+                        <span className="text-green-200">
+                          Result from {doerData.tool}:
+                        </span>{" "}
+                        <span className="text-green-100">
+                          {JSON.stringify(doerData.result)}
+                        </span>
+                      </div>
+                    )}
+                    {doerData.type === "doer-completion" && (
+                      <div>
+                        <span className="text-green-200">Completed:</span>{" "}
+                        <span className="text-green-100">
+                          {String(doerData.result)}
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              );
 
             // case "tool-set_test_brief":
             // case "tool-set_test_protocol":
